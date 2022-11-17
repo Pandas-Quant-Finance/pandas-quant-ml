@@ -7,7 +7,7 @@ from typing import List, Callable, Tuple
 
 import pandas as pd
 
-from pandas_ta.pandas_ta_utils.decorators import for_each_top_level_row_aggregate, for_each_top_level_column_aggregate
+from pandas_df_commons.indexing.decorators import for_each_top_level_row_aggregate, for_each_top_level_column_aggregate
 from pandas_ta_ml._abstract.transfromer import Transformer
 from pandas_df_commons.indexing import get_columns
 

@@ -5,7 +5,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from sklearn.linear_model import LinearRegression
 
-from pandas_ta.pandas_ta_utils.decorators import for_each_top_level_row, for_each_column
+from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_column
 from pandas_ta_ml._abstract import Transformer
 
 

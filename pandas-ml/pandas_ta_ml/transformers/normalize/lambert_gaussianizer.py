@@ -7,7 +7,7 @@ import sklearn
 from scipy import special, optimize
 from scipy.stats import kurtosis
 
-from pandas_ta.pandas_ta_utils.decorators import for_each_top_level_row, for_each_column
+from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_column
 from pandas_ta_ml._abstract.transfromer import Transformer
 
 _EPS = 1e-6

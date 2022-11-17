@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pandas_ta.pandas_ta_utils.decorators import for_each_top_level_row, for_each_top_level_column, \
+from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_top_level_column, \
     convert_series_as_data_frame
 from pandas_ta_ml._abstract import Transformer
 from .percent_change import PercentChange

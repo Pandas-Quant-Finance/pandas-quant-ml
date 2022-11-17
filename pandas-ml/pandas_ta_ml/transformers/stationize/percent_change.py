@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from pandas_ta.pandas_ta_utils.decorators import for_each_top_level_row
+from pandas_df_commons.indexing.decorators import for_each_top_level_row
 from pandas_ta_ml._abstract.transfromer import Transformer
 
 
