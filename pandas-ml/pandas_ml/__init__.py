@@ -7,8 +7,8 @@ from itertools import chain
 class _ML(object):
 
     def __init__(self, df):
-        from pandas_ta_ml import analytics as anal
-        from pandas_ta_ml import transformers as trans
+        from pandas_ml import analytics as anal
+        from pandas_ml import transformers as trans
         from functools import partial, wraps
 
         self.df = df

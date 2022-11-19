@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 from config import DF_TEST
-from pandas_ta_ml.transformers import ml_zscore, PercentChange, PositionalBar, ml_distance_from_ma, \
+from pandas_ml.transformers import ml_zscore, PercentChange, PositionalBar, ml_distance_from_ma, \
     RelativeBar, ZScore, DistanceFormAverage, GapUpperLowerBody
 
 

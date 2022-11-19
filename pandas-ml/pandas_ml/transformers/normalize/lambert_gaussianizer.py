@@ -7,14 +7,14 @@ import sklearn
 from scipy import special, optimize
 from scipy.stats import kurtosis
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_column
-from pandas_ta_ml._abstract.transfromer import Transformer
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_column
+from pandas_ml._abstract.transfromer import Transformer
 
 _EPS = 1e-6
 
 
-@for_each_column
-@for_each_top_level_row
+@foreach_column
+@foreach_top_level_row
 def ml_lambert_gaussianizer(df: pd.Series, tol: float = 1e-5, max_iter: int = 100, verbose: bool = False):
     df = df.dropna().to_frame()
     lg = LambertGaussianizer(tol, max_iter, verbose)

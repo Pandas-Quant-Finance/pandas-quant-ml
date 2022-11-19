@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from pandas_df_commons.indexing.decorators import for_each_column
-from pandas_ta_ml._abstract.transfromer import Transformer
+from pandas_df_commons.indexing.decorators import foreach_column
+from pandas_ml._abstract.transfromer import Transformer
 
 
 def ml_log(df: pd.DataFrame, base=None):
@@ -20,7 +20,7 @@ class LogNormalizer(Transformer):
         self.base = base
 
     def transform(self, df: pd.DataFrame):
-        @for_each_column  # because we need to check for illegal values (<=0) for each column individually
+        @foreach_column  # because we need to check for illegal values (<=0) for each column individually
         def do_log(df):
             if df.min() <= 0:
                 df = df + 1

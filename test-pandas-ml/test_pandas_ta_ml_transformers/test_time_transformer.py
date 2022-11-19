@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from config import DF_TEST
-from pandas_ta_ml.transformers.time.volume import EvenlySpacedVolumeTime
+from pandas_ml.transformers.time.volume import EvenlySpacedVolumeTime
 
 
 class TestTimeTransformer(TestCase):

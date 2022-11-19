@@ -1,0 +1,6 @@
+dill
+ipykernel
+jupyter
+jupyter-client
+tabulate
+pathos

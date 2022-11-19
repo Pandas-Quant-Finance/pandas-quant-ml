@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 from config import DF_TEST
-from pandas_ta_ml.transformers.scale import ml_rescale, Rescale
+from pandas_ml.transformers.scale import ml_rescale, Rescale
 
 
 class TestScaler(TestCase):

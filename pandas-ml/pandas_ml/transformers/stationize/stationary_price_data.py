@@ -1,20 +1,20 @@
 import pandas as pd
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_top_level_column, \
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column, \
     convert_series_as_data_frame
-from pandas_ta_ml._abstract import Transformer
+from pandas_ml._abstract import Transformer
 from .percent_change import PercentChange
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 @convert_series_as_data_frame
 def ml_zscore(df: pd.DataFrame, period: int, ddof=1, exponential=False):
     return ZScore(period, ddof, exponential).transform(df)
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 @convert_series_as_data_frame
 def ml_distance_from_ma(df: pd.DataFrame, period: int, exponential=False):
     return DistanceFormAverage(period, exponential).transform(df)

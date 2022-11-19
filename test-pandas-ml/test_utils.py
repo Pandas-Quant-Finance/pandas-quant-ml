@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pandas_ta_ml.utils.rescaler import ReScaler
+from pandas_ml.utils.rescaler import ReScaler
 
 
 class TestUtils(TestCase):

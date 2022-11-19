@@ -1,13 +1,13 @@
 import numpy as np
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_top_level_column
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
 import pandas as pd
 
-from pandas_ta_ml._abstract import Transformer
+from pandas_ml._abstract import Transformer
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 def ml_positional_bar(df, open="Open", high="High", low="Low", close="Close"):
     gap = df[close] / df[close].shift(1) - 1
     body = df[close] / df[open] - 1
@@ -20,15 +20,15 @@ def ml_positional_bar(df, open="Open", high="High", low="Low", close="Close"):
     )
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 def ml_realative_bar(df: pd.DataFrame, open="Open", high="High", low="Low", close="Close", volume="Volume", drop_nan_volume=True):
     rb = RelativeBar(open=open, high=high, low=low, close=close, volume=volume, drop_nan_volume=drop_nan_volume)
     return rb.transform(df)
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 def ml_gulb_bar(df: pd.DataFrame, open="Open", high="High", low="Low", close="Close", volume="Volume", drop_nan_volume=True, **kwargs):
     rb = GapUpperLowerBody(open=open, high=high, low=low, close=close, volume=volume, drop_nan_volume=drop_nan_volume)
     return rb.transform(df)

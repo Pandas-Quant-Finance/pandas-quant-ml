@@ -7,8 +7,8 @@ from typing import List, Callable, Tuple
 
 import pandas as pd
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row_aggregate, for_each_top_level_column_aggregate
-from pandas_ta_ml._abstract.transfromer import Transformer
+from pandas_df_commons.indexing.decorators import foreach_top_level_row_aggregate, foreach_top_level_column_aggregate
+from pandas_ml._abstract.transfromer import Transformer
 from pandas_df_commons.indexing import get_columns
 
 
@@ -38,8 +38,8 @@ def ml_transform(df: pd.DataFrame, *transformers: Flow, drop_untransformed=True,
             )
         return agg
 
-    @for_each_top_level_row_aggregate(aggregator(0))
-    @for_each_top_level_column_aggregate(aggregator(1))
+    @foreach_top_level_row_aggregate(aggregator(0))
+    @foreach_top_level_column_aggregate(aggregator(1))
     def transform(_df):
         flows = deepcopy(Flows(*transformers, drop_untransformed=drop_untransformed))
         return flows.transform(_df), flows

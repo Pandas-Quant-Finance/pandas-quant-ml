@@ -2,22 +2,22 @@ import numpy as np
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import KBinsDiscretizer
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_top_level_column
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
 import pandas as pd
 
-from pandas_ta_ml._abstract import Transformer
+from pandas_ml._abstract import Transformer
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 def ml_categorical_bar(df: pd.DataFrame, open="Open", high="High", low="Low", close="Close", body_threshold=0.975, gap_threshold=0.002):
     return CategoricalBar(
         open=open, high=high, low=low, close=close, body_threshold=body_threshold, gap_threshold=gap_threshold
     ).transform(df)
 
 
-@for_each_top_level_row
-@for_each_top_level_column
+@foreach_top_level_row
+@foreach_top_level_column
 def ml_kbins_discretizer(df: pd.DataFrame, discretizer: KBinsDiscretizer):
     return KBins(discretizer).transform(df)
 

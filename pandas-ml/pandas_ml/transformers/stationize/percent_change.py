@@ -3,16 +3,16 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row
-from pandas_ta_ml._abstract.transfromer import Transformer
+from pandas_df_commons.indexing.decorators import foreach_top_level_row
+from pandas_ml._abstract.transfromer import Transformer
 
 
-@for_each_top_level_row
+@foreach_top_level_row
 def ml_pct_change(df: pd.DataFrame):
     return PercentChange().transform(df)
 
 
-@for_each_top_level_row
+@foreach_top_level_row
 def ml_cumprod(df: pd.DataFrame, base: float | pd.Series | np.ndarray = None):
     return PercentChange(base).transform(df)
 

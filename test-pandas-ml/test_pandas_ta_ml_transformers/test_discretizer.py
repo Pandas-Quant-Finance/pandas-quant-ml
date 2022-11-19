@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.preprocessing import KBinsDiscretizer
 
 from config import DF_TEST
-from pandas_ta_ml.transformers import CategoricalBar, KBins
+from pandas_ml.transformers import CategoricalBar, KBins
 
 
 class TestDiscretizer(TestCase):

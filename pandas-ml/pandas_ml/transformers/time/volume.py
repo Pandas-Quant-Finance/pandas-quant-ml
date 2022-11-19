@@ -5,12 +5,12 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from sklearn.linear_model import LinearRegression
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_column
-from pandas_ta_ml._abstract import Transformer
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_column
+from pandas_ml._abstract import Transformer
 
 
 # all columns have the same index, so only rows levels are needed
-@for_each_top_level_row
+@foreach_top_level_row
 def ml_volume_time(df: pd.DataFrame, volume="Volume", kind='quadratic', fill_value='extrapolate'):
     return EvenlySpacedVolumeTime(volume=volume, kind=kind, fill_value=fill_value).transform(df)
 
@@ -37,7 +37,7 @@ class EvenlySpacedVolumeTime(Transformer):
         time = df.index[0].timestamp(), df.index[-1].timestamp()
         self.affine_time_model = LinearRegression().fit(idx.reshape((-1, 1)), np.linspace(*time, len(idx)))
 
-        @for_each_column
+        @foreach_column
         def interpolate(s):
             return pd.Series(interpolator(s)(idx), index=idx, name=s.name)
 

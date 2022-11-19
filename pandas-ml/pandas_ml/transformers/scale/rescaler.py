@@ -2,13 +2,13 @@ from typing import Tuple
 
 import pandas as pd
 
-from pandas_df_commons.indexing.decorators import for_each_top_level_row, for_each_top_level_column
-from pandas_ta_ml._abstract import Transformer
-from pandas_ta_ml.utils.rescaler import ReScaler
+from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
+from pandas_ml._abstract import Transformer
+from pandas_ml.utils.rescaler import ReScaler
 
 
-@for_each_top_level_column
-@for_each_top_level_row
+@foreach_top_level_column
+@foreach_top_level_row
 def ml_rescale(df: pd.DataFrame, range=(-1, 1), domain=None, digits=None, axis=None):
     r = Rescale(range, domain, )
     if axis is not None:

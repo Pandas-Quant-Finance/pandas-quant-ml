@@ -1,7 +1,7 @@
 from unittest import TestCase
 from config import DF_TEST
-from pandas_ta_ml.transformers import *
-from pandas_ta_ml.patched import pd
+from pandas_ml.transformers import *
+from pandas_ml.patched import pd
 
 
 class TestTrasformationChain(TestCase):
@@ -48,4 +48,5 @@ class TestTrasformationChain(TestCase):
             Flow("Volume") >> PercentChange() >> LogNormalizer()
         )
 
+        self.assertListEqual(df.columns.tolist(), ['gap', 'body', 'shadow', 'position', 'Volume'])
         pd.testing.assert_frame_equal(df.inverse(), df)
