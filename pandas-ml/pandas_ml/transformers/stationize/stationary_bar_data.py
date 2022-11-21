@@ -57,7 +57,7 @@ class PositionalBar(Transformer):
             index=df.index
         )
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         open, high, low, close = np.zeros((4, len(df)))
         previous_close = self.basis
         for i in range(len(df)):
@@ -103,7 +103,7 @@ class RelativeBar(Transformer):
 
         return relative
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         inv = pd.DataFrame(index=df.index)
 
         # start with the restore of the close
@@ -164,7 +164,7 @@ class GapUpperLowerBody(Transformer):
 
         return res
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         inv = pd.DataFrame(index=df.index)
         previous_close = self.basis["open"]
         open, close = np.empty((2, len(df)))

@@ -12,7 +12,16 @@ from pandas_ml._abstract.transfromer import Transformer
 from pandas_df_commons.indexing import get_columns
 
 
-def ml_transform(df: pd.DataFrame, *transformers: Flow, drop_untransformed=True, return_transformers=False, patch_df_4_inverse=True):
+# note top level rows and columns will be handled inside the function
+def ml_features_labels(df: pd.DataFrame, feature_transformers: Flows, label_transformers: Flows, ):
+    dff = ml_transform(df, feature_transformers, return_transformers=False, patch_df_4_inverse=False)
+    dfl, lt = ml_transform(df, label_transformers, return_transformers=True, patch_df_4_inverse=False)
+
+    return dff, dfl, Inverse(lt)
+
+
+# note top level rows and columns will be handled inside the function
+def ml_transform(df: pd.DataFrame, transformers: Flows, return_transformers=False, patch_df_4_inverse=True):
     """
     All transformers return a tuple of dataframe and an inverse function.
     Therefore, (in contrast to analytics functions) none of the transformers is decorated and each frame gets treated as
@@ -31,7 +40,7 @@ def ml_transform(df: pd.DataFrame, *transformers: Flow, drop_untransformed=True,
     """
 
     def aggregator(axis):
-        def agg(results):
+        def agg(results, level):
             return (
                 pd.concat([v[0] for v in results.values()], keys=results.keys(), axis=axis),
                 pd.concat([pd.DataFrame({"Transformer": [v[1]]}) for v in results.values()], keys=results.keys(), axis=axis)
@@ -41,24 +50,57 @@ def ml_transform(df: pd.DataFrame, *transformers: Flow, drop_untransformed=True,
     @foreach_top_level_row_aggregate(aggregator(0))
     @foreach_top_level_column_aggregate(aggregator(1))
     def transform(_df):
-        flows = deepcopy(Flows(*transformers, drop_untransformed=drop_untransformed))
+        flows = deepcopy(transformers)
         return flows.transform(_df), flows
-
-    def inverse_flow_method(self, flows):
-        if isinstance(flows, Transformer):
-            return flows.inverse(self)
-        else:
-            # TODO for each row/column we need a different invertor
-            #flows.loc[row, column].inverse(self.loc[row or column])
-            pass
 
     df, fitted_flows = transform(df)
 
     if patch_df_4_inverse:
-        df.inverse = MethodType(partial(inverse_flow_method, flows=fitted_flows), df)
+        df.inverse = MethodType(Inverse(fitted_flows), df)
 
     # return transformed data with or without the fitted transformer
     return (df, fitted_flows) if return_transformers else df
+
+
+class Inverse(object):
+
+    def __init__(self, transformer: Transformer | pd.DataFrame):
+        super().__init__()
+        self.transformer = transformer
+
+    def __call__(self, df: pd.DataFrame, *args, **kwargs):
+        if isinstance(self.transformer, pd.DataFrame):
+            tfs = self.transformer
+            union_frames = []
+
+            for ri, row in tfs.iterrows():
+                join_frames = []
+                for ci, value in row.items():
+                    t = tfs.loc[ri, ci]
+                    if isinstance(ri, tuple) and isinstance(ci, tuple):
+                        join_frames.append(t.inverse(df.loc[ri[0], ci[0]]))
+                    if isinstance(ri, tuple):
+                        join_frames.append(t.inverse(df.loc[ri[0]]))
+                    if isinstance(ci, tuple):
+                        join_frames.append(t.inverse(df[ci[0]]))
+                    else:
+                        raise ValueError("row or column has to be multiindex")
+
+                union_frames.append(
+                    pd.concat(
+                        join_frames,
+                        keys=tfs.columns.get_level_values(0) if isinstance(tfs.columns, pd.MultiIndex) else None,
+                        axis=1,
+                    )
+                )
+
+            return pd.concat(
+                union_frames,
+                keys=tfs.index.get_level_values(0) if isinstance(tfs.index, pd.MultiIndex) else None,
+                axis=0
+            )
+        else:
+            return self.transformer.inverse(df, **kwargs)
 
 
 class Flows(Transformer):

@@ -17,5 +17,5 @@ class Transformer(object):
         pass
 
     @abstractmethod
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         pass

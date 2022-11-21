@@ -4,6 +4,7 @@ import pandas as pd
 
 from config import DF_TEST
 from pandas_ml.transformers.scale import ml_rescale, Rescale
+from pandas_ml.transformers.scale.accumulate import CumProd, ShiftAppend
 
 
 class TestScaler(TestCase):
@@ -24,3 +25,18 @@ class TestScaler(TestCase):
         inv = r.inverse(df)
         pd.testing.assert_frame_equal(inv, DF_TEST.astype(float))
 
+    def test_ShiftAppend(self):
+        t = ShiftAppend(3)
+        df = DF_TEST[["Close", "Open"]]
+        c = t.transform(df)
+        i = t.inverse(c)
+
+        pd.testing.assert_frame_equal(i, df)
+
+    def test_CumProd(self):
+        t = CumProd(4)
+        df = DF_TEST[["Close"]].pct_change()
+        c = t.transform(df)
+        i = t.inverse(c)
+
+        pd.testing.assert_frame_equal(i, c)

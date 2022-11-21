@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import numpy as np
 import pandas as pd
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
@@ -49,7 +50,7 @@ class Rescale(Transformer):
         else:
             return df.apply(rescaler, axis=self.axis)
 
-    def inverse(self, df: pd.DataFrame):
+    def inverse(self, df: pd.DataFrame, **kwargs):
         assert self._domain is not None, "Need to apply transform first before inverse is possible"
         rescaler = ReScaler(self.range, self._domain)
         if self.digits is not None:
