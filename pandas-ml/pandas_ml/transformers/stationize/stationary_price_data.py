@@ -32,7 +32,7 @@ class ZScore(Transformer):
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         if self.exponential:
             mean = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).mean()
-            std = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).std(ddof=self.ddof)
+            std = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).std()
         else:
             mean = df.rolling(self.period).mean()
             std = df.rolling(self.period).std(ddof=self.ddof)

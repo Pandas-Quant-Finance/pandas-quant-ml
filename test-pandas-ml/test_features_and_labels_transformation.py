@@ -13,8 +13,9 @@ class TestTransformationChain(TestCase):
             DF_TEST_MULTI,
             SelectJoin(
                 Select("Open", "High", "Low", "Close") >> GapUpperLowerBody(),
-                Select("Volume") >> PercentChange() >> LogNormalizer()
-            ),
+                Select("Volume") >> PercentChange() >> LogNormalizer(),
+                Select("Close") >> ZScore(20, exponential=True),
+            ) >> ShiftAppend(30),
             Select("Close") >> PercentChange() >> CumProd(5),
             labels_shift=-5
         )

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from copy import deepcopy
 
+import numpy as np
 import pandas as pd
 
 from pandas_df_commons.indexing import get_columns
@@ -16,15 +17,21 @@ _log = logging.getLogger(__name__)
 
 
 # note top level rows and columns will be handled inside the function
-def ml_features_labels(df: pd.DataFrame, feature_transformer: Transformer, label_transformer: Transformer, labels_shift=-1):
+def ml_features_labels(
+        df: pd.DataFrame,
+        feature_transformer: Transformer,
+        label_transformer: Transformer,
+        labels_shift=-1,
+        replace_inf=np.nan
+):
     if labels_shift > 0:
         _log.warning(f"Do you really want to shift positive? Like the past {labels_shift} values to the future ")
 
     features = ml_transform(df, feature_transformer, False)
     labels, label_inverter = ml_transform(df, label_transformer, True)
 
-    features = features.dropna()
-    labels = labels.shift(labels_shift).dropna()
+    features = features.replace([-np.inf, np.inf], replace_inf).dropna()
+    labels = labels.shift(labels_shift).replace([-np.inf, np.inf], replace_inf).dropna()
     idx = intersection_of_index(features, labels)
 
     return features.loc[idx], labels.loc[idx], label_inverter
