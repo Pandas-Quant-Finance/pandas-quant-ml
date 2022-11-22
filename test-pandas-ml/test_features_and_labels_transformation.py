@@ -11,7 +11,10 @@ class TestTransformationChain(TestCase):
     def test_example_usecase(self):
         features, labels, label_inverter = ml_features_labels(
             DF_TEST_MULTI,
-            Select("Open", "High", "Low", "Close") >> GapUpperLowerBody(),
+            SelectJoin(
+                Select("Open", "High", "Low", "Close") >> GapUpperLowerBody(),
+                Select("Volume") >> PercentChange() >> LogNormalizer()
+            ),
             Select("Close") >> PercentChange() >> CumProd(5),
             labels_shift=-5
         )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 
 import pandas as pd
@@ -10,9 +11,15 @@ from pandas_df_commons.indexing.intersection import intersection_of_index
 from pandas_df_commons.indexing.multiindex_utils import get_top_level_of_multi_index
 from pandas_ml._abstract.transfromer import Transformer
 
+# define default logger
+_log = logging.getLogger(__name__)
+
 
 # note top level rows and columns will be handled inside the function
 def ml_features_labels(df: pd.DataFrame, feature_transformer: Transformer, label_transformer: Transformer, labels_shift=-1):
+    if labels_shift > 0:
+        _log.warning(f"Do you really want to shift positive? Like the past {labels_shift} values to the future ")
+
     features = ml_transform(df, feature_transformer, False)
     labels, label_inverter = ml_transform(df, label_transformer, True)
 
@@ -32,6 +39,18 @@ def ml_transform(df: pd.DataFrame, transformer: Transformer, return_inverter=Fal
     stocks). In order to take such logically repeating datasets into account this function has to be used as the
     entrypoint - i.e.:
 
+    transformed_df, inverter = df.ml.transform(
+        SelectJoin(
+            Select("Open", "High", "Low", "Close") >> GapUpperLowerBody() >> SelectJoin(
+                Select("gap") >> LambertGaussianizer() >> Rescale(),
+                Select("upper") >> LambertGaussianizer() >> Rescale(),
+                Select("lower") >> LambertGaussianizer() >> Rescale(),
+                Select("body") >> LambertGaussianizer() >> Rescale(),
+            ),
+            Select("Volume") >> PercentChange() >> LogNormalizer() >> Rescale()
+        ),
+        return_inverter=True
+    )
     """
 
     def aggregator(axis):
