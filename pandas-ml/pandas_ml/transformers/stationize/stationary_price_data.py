@@ -29,7 +29,7 @@ class ZScore(Transformer):
         self.exponential = exponential
         self.percent_change = PercentChange()
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         if self.exponential:
             mean = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).mean()
             std = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).std(ddof=self.ddof)
@@ -49,7 +49,7 @@ class ZScore(Transformer):
             axis=1
         ).swaplevel(-1, -2, axis=1)
 
-    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         df = df.swaplevel(0, -1, axis=1)
         ma = self.percent_change.inverse(df["mean"].dropna())
         df = df.loc[ma.index]
@@ -64,7 +64,7 @@ class DistanceFormAverage(Transformer):
         self.exponential = exponential
         self.percent_change = PercentChange()
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         if self.exponential:
             mean = (df.ewm(span=self.period) if self.period > 1 else df.ewm(alpha=self.period)).mean()
         else:
@@ -76,7 +76,7 @@ class DistanceFormAverage(Transformer):
             axis=1
         ).swaplevel(-1, -2, axis=1)
 
-    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         df = df.swaplevel(0, -1, axis=1)
         ma = self.percent_change.inverse(df["mean"].dropna())
         df = df.loc[ma.index]

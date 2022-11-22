@@ -57,7 +57,7 @@ class CategoricalBar(Transformer):
         self.body_threshold = body_threshold
         self.gap_threshold = gap_threshold
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         df["close-1"] = df[self.close].shift(1)
 
@@ -95,7 +95,7 @@ class CategoricalBar(Transformer):
         ranks = df.apply(map, raw=False, axis=1)
         return ranks.rename("bar_category").to_frame()
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame) -> pd.DataFrame:
         return df["bar_category"].cumsum()
 
 
@@ -106,7 +106,7 @@ class KBins(Transformer):
         self.discretizer = discretizer
         self.columns = None
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         try:
             discrete = self.discretizer.transform(df)
         except NotFittedError:
@@ -118,7 +118,7 @@ class KBins(Transformer):
             index=df.index
         )
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(
             self.discretizer.inverse_transform(df),
             index=df.index,

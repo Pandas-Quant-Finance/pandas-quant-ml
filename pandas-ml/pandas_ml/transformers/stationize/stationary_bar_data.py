@@ -44,7 +44,7 @@ class PositionalBar(Transformer):
         self.close = close
         self.basis = 0
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         self.basis = df[self.close].iloc[0]
         gap = (df[self.close] / df[self.close].shift(1) - 1).fillna(0)
         body = df[self.close] / df[self.open] - 1
@@ -57,7 +57,7 @@ class PositionalBar(Transformer):
             index=df.index
         )
 
-    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         open, high, low, close = np.zeros((4, len(df)))
         previous_close = self.basis
         for i in range(len(df)):
@@ -88,7 +88,7 @@ class RelativeBar(Transformer):
         self.drop_nan_volume = drop_nan_volume
         self.basis = 0
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         self.basis = df.iloc[0].copy()
         relative = pd.DataFrame(index=df.index)
         close_1 = df[self.close].shift(1)
@@ -103,7 +103,7 @@ class RelativeBar(Transformer):
 
         return relative
 
-    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         inv = pd.DataFrame(index=df.index)
 
         # start with the restore of the close
@@ -137,7 +137,7 @@ class GapUpperLowerBody(Transformer):
         self.drop_nan_volume = drop_nan_volume
         self.basis = {}
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         o = df[self.open]
         c = df[self.close]
         h = df[self.high]
@@ -154,7 +154,7 @@ class GapUpperLowerBody(Transformer):
             "body": (c / o - 1)
         }, index=df.index)
 
-        if self.volume is not None:
+        if self.volume is not None and self.volume in df.columns:
             rel_vol = df[self.volume].pct_change().fillna(0)
             if not self.drop_nan_volume or not rel_vol.isnull().all():
                 res[self.volume] = rel_vol
@@ -164,7 +164,7 @@ class GapUpperLowerBody(Transformer):
 
         return res
 
-    def inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         inv = pd.DataFrame(index=df.index)
         previous_close = self.basis["open"]
         open, close = np.empty((2, len(df)))

@@ -23,10 +23,10 @@ class PercentChange(Transformer):
         super().__init__()
         self.base = base
 
-    def transform(self, df: pd.DataFrame):
+    def _transform(self, df: pd.DataFrame):
         self.base = df.iloc[0]
         return df.pct_change().fillna(0)
 
-    def inverse(self, df: pd.DataFrame, base=None):
+    def _inverse(self, df: pd.DataFrame, base=None):
         base = base if base else self.base
         return (df + 1).cumprod().apply(lambda x: x * base, axis=1)

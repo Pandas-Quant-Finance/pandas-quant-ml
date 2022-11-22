@@ -19,7 +19,7 @@ class LogNormalizer(Transformer):
         super().__init__()
         self.base = base
 
-    def transform(self, df: pd.DataFrame):
+    def _transform(self, df: pd.DataFrame):
         @foreach_column  # because we need to check for illegal values (<=0) for each column individually
         def do_log(df):
             if df.min() <= 0:
@@ -29,6 +29,6 @@ class LogNormalizer(Transformer):
 
         return do_log(df)
 
-    def inverse(self, df: pd.DataFrame):
+    def _inverse(self, df: pd.DataFrame):
         base = (np.e if self.base is None else self.base)
         return (base ** df) - 1

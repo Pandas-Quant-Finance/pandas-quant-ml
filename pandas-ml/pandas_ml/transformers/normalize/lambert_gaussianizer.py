@@ -61,7 +61,23 @@ class LambertGaussianizer(sklearn.base.TransformerMixin, Transformer):
         self.coefs_ = []  # Store tau for each transformed variable
         self.verbose = verbose
 
-    def inverse(self, df):
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        if len(self.coefs_) <= 0:
+            self.fit(df.values)
+
+        """Transform new data using a previously learned Gaussianization model."""
+        x = self._update_x(df.values)
+        if x.shape[1] != len(self.coefs_):
+            raise ValueError\
+                ("%d variables in test data, but %d variables were in training data." % (x.shape[1], len(self.coefs_)))
+
+        return pd.DataFrame(
+            np.array([self._w_t(x_i, tau_i) for x_i, tau_i in zip(x.T, self.coefs_)]).T,
+            index=df.index,
+            columns=df.columns
+        )
+
+    def _inverse(self, df):
         return pd.DataFrame(
             self.inverse_transform(df.values),
             index=df.index,
@@ -82,25 +98,9 @@ class LambertGaussianizer(sklearn.base.TransformerMixin, Transformer):
 
         return self
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        if len(self.coefs_) <= 0:
-            self.fit(df.values)
-
-        """Transform new data using a previously learned Gaussianization model."""
-        x = self._update_x(df.values)
-        if x.shape[1] != len(self.coefs_):
-            raise ValueError\
-                ("%d variables in test data, but %d variables were in training data." % (x.shape[1], len(self.coefs_)))
-
-        return pd.DataFrame(
-            np.array([self._w_t(x_i, tau_i) for x_i, tau_i in zip(x.T, self.coefs_)]).T,
-            index=df.index,
-            columns=df.columns
-        )
-
     def inverse_transform(self, y: np.ndarray) -> np.ndarray:
         """Recover original data from Gaussianized data."""
-        return np.array([self._inverse(y_i, tau_i) for y_i, tau_i in zip(y.T, self.coefs_)]).T
+        return np.array([self.__inverse(y_i, tau_i) for y_i, tau_i in zip(y.T, self.coefs_)]).T
 
     def _update_x(self, x: Union[np.ndarray, List]) -> np.ndarray:
         x = np.asarray(x)
@@ -120,7 +120,7 @@ class LambertGaussianizer(sklearn.base.TransformerMixin, Transformer):
         # Eq. 8
         return tau[0] + tau[1] * self._w_d((y - tau[0]) / tau[1], tau[2])
 
-    def _inverse(self, x, tau):
+    def __inverse(self, x, tau):
         # Eq. 6
         u = (x - tau[0]) / tau[1]
         return tau[0] + tau[1] * (u * np.exp(u * u * (tau[2] * 0.5)))

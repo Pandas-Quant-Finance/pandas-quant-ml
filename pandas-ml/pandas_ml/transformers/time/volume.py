@@ -28,7 +28,7 @@ class EvenlySpacedVolumeTime(Transformer):
         self.fill_value = fill_value
         self.affine_time_model = None
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         vol = df[self.volume].cumsum()
         idx = np.linspace(vol.iloc[0], vol.iloc[-1], len(df), endpoint=True)
         interpolator = partial(interp1d, vol, kind=self.kind, fill_value=self.fill_value)
@@ -43,5 +43,5 @@ class EvenlySpacedVolumeTime(Transformer):
 
         return interpolate(df)
 
-    def inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _inverse(self, df: pd.DataFrame) -> pd.DataFrame:
         return df.set_index(pd.to_datetime(self.affine_time_model.predict(df.index.values.reshape((-1, 1))), unit='s'))

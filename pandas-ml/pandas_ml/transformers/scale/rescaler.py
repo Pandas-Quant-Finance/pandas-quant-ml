@@ -42,7 +42,7 @@ class Rescale(Transformer):
         else:
             self.domain = lambda df: domain
 
-    def transform(self, df: pd.DataFrame):
+    def _transform(self, df: pd.DataFrame):
         self._domain = self.domain(df)
         rescaler = ReScaler(self._domain, self.range)
         if self.digits is not None:
@@ -50,7 +50,7 @@ class Rescale(Transformer):
         else:
             return df.apply(rescaler, axis=self.axis)
 
-    def inverse(self, df: pd.DataFrame, **kwargs):
+    def _inverse(self, df: pd.DataFrame, **kwargs):
         assert self._domain is not None, "Need to apply transform first before inverse is possible"
         rescaler = ReScaler(self.range, self._domain)
         if self.digits is not None:

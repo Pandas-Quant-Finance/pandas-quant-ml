@@ -17,14 +17,14 @@ class ShiftAppend(Transformer):
         super().__init__()
         self.period = period
 
-    def transform(self, df: pd.DataFrame):
+    def _transform(self, df: pd.DataFrame):
         @foreach_column
         def shift(df):
             return pd.DataFrame({f"t-{i}": df.shift(i) for i in range(self.period, -1, -1)}, index=df.index)
 
         return shift(df)
 
-    def inverse(self, df: pd.DataFrame, base=None):
+    def _inverse(self, df: pd.DataFrame, base=None):
         @foreach_top_level_column
         def last(df):
             return df.iloc[:, -1]
@@ -40,7 +40,7 @@ class CumProd(Transformer):
         self.offset = offset
         self.base = base
 
-    def transform(self, df: pd.DataFrame):
+    def _transform(self, df: pd.DataFrame):
         self.base = df.iloc[0]
 
         @foreach_column
@@ -49,7 +49,7 @@ class CumProd(Transformer):
 
         return cumprod(df)
 
-    def inverse(self, df: pd.DataFrame, base=None):
+    def _inverse(self, df: pd.DataFrame, base=None):
         pct_change = df.iloc[:, 0]
         price = (pct_change + self.offset).cumprod().apply(lambda x: x * self.base, axis=1)
         price.join(df.iloc[:, 1:]).apply(lambda r: [r[0] * r[i] + self.offset for i in range(1, df.shape[1])], axis=1)
