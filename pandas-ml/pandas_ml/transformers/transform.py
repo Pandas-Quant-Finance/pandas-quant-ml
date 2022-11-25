@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -84,16 +85,31 @@ def ml_transform(df: pd.DataFrame, transformer: Transformer, return_inverter=Fal
 
 class Select(Transformer):
 
-    def __init__(self, *columns, **kwargs) -> None:
+    def __init__(self, *columns, rename=None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.columns = list(columns)
+
+        if rename is not None:
+            if isinstance(rename, Dict):
+                self.rename = rename
+            else:
+                self.rename = dict(zip(columns, rename if isinstance(rename, list) else [rename]))
+        else:
+            self.rename = None
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         df = get_columns(df, self.columns)
         if df.ndim < 2: df = df.to_frame()
+
+        if self.rename is not None:
+            df = df.rename(columns=self.rename)
+
         return df
 
     def _inverse(self, df: pd.DataFrame) -> pd.DataFrame:
+        if self.rename is not None:
+            df = df.rename(columns={v: k for k, v in self.rename.items()})
+
         return df
 
 
@@ -112,7 +128,10 @@ class SelectJoin(Transformer):
 
     def _inverse(self, df: pd.DataFrame) -> pd.DataFrame:
         dfs = [se.inverse(df[self.resulting_columns[i]]) for i, se in enumerate(self.selectors)]
-        return pd.concat(dfs, axis=1)
+        res = pd.concat(dfs, axis=1)
+
+        # make sure we don't have duplicate columns
+        return res.loc[:, ~res.columns.duplicated()]
 
 
 class _Invertor(object):

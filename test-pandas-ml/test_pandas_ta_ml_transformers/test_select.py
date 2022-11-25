@@ -30,3 +30,15 @@ class TestTrasformationChain(TestCase):
 
         pd.testing.assert_frame_equal(idf, df[["Open", "High", "Low", "Close", "Volume"]].astype(float))
 
+    def test_select_with_rename(self):
+        t = SelectJoin(
+            Select("Close", rename='LogReturns') >> PercentChange() >> LogNormalizer(),
+            Select("Close", rename='Lambert') >> PercentChange() >> LambertGaussianizer(),
+        )
+
+        df = DF_TEST[:10]
+
+        tdf = t(df)
+        idf = t.inverse(tdf)
+
+        pd.testing.assert_frame_equal(idf, df[["Close"]])

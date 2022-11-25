@@ -1,11 +1,10 @@
 
-Add two new functions to pandas series:
-* make_stationary
+Core Functionality of this module:
+* make data stationary
 * discretize
+* analyze data distribution (q-q plot)
+* measure quality of fit
 
-## Analyze Data
-
-Q-Q plot function for each variable
 
 ## Transform data
 Use an invertible flow to transform data suitable for machine learning
@@ -41,6 +40,18 @@ features, labels, label_inverter = df.ml.features_labels(
     # predict 5 steps into the future
     labels_shift=-5
 )
+```
+
+## Analyze Data
+
+Q-Q plot function for each variable:
+```
+df.ml.transform(
+    SelectJoin(
+        Select("Close", rename='LogReturns') >> PercentChange() >> LogNormalizer(),
+        Select("Close", rename='Lambert') >> PercentChange() >> LambertGaussianizer(),
+    )
+).ml.qqplot()
 ```
 
 
