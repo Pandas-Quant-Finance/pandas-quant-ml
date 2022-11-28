@@ -8,7 +8,7 @@ import pandas as pd
 from pandas_df_commons.extensions.functions import rolling_apply
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, convert_series_as_data_frame, foreach_column, \
     foreach_top_level_column
-from pandas_ml._abstract.transfromer import Transformer
+from pandas_quant_ml._abstract.transfromer import Transformer
 
 
 class ShiftAppend(Transformer):

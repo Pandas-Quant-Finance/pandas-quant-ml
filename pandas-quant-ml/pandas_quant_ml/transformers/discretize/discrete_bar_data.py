@@ -5,7 +5,7 @@ from sklearn.preprocessing import KBinsDiscretizer
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
 import pandas as pd
 
-from pandas_ml._abstract import Transformer
+from pandas_quant_ml._abstract import Transformer
 
 
 @foreach_top_level_row

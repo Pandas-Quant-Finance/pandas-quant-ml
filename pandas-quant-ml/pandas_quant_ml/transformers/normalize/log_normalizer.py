@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from pandas_df_commons.indexing.decorators import foreach_column
-from pandas_ml._abstract.transfromer import Transformer
+from pandas_quant_ml._abstract.transfromer import Transformer
 
 
 def ml_log(df: pd.DataFrame, base=None):

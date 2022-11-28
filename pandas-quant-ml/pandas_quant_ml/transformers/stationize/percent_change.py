@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row
-from pandas_ml._abstract.transfromer import Transformer
+from pandas_quant_ml._abstract.transfromer import Transformer
 
 
 @foreach_top_level_row

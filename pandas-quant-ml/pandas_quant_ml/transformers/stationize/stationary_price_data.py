@@ -2,7 +2,7 @@ import pandas as pd
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column, \
     convert_series_as_data_frame
-from pandas_ml._abstract import Transformer
+from pandas_quant_ml._abstract import Transformer
 from .percent_change import PercentChange
 
 

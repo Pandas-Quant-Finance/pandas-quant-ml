@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 from config import DF_TEST
-from pandas_ml.transformers import LambertGaussianizer, LogNormalizer
+from pandas_quant_ml.transformers import LambertGaussianizer, LogNormalizer
 
 
 class TestNormalizer(TestCase):

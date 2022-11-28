@@ -11,7 +11,7 @@ from pandas_df_commons.indexing import get_columns
 from pandas_df_commons.indexing.decorators import foreach_top_level_row_and_column
 from pandas_df_commons.indexing.intersection import intersection_of_index
 from pandas_df_commons.indexing.multiindex_utils import get_top_level_of_multi_index
-from pandas_ml._abstract.transfromer import Transformer
+from pandas_quant_ml._abstract.transfromer import Transformer
 
 # define default logger
 _log = logging.getLogger(__name__)

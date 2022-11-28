@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 from sklearn.linear_model import LinearRegression
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_column
-from pandas_ml._abstract import Transformer
+from pandas_quant_ml._abstract import Transformer
 
 
 # all columns have the same index, so only rows levels are needed

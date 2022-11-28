@@ -8,7 +8,7 @@ from scipy import special, optimize
 from scipy.stats import kurtosis
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_column
-from pandas_ml._abstract.transfromer import Transformer
+from pandas_quant_ml._abstract.transfromer import Transformer
 
 _EPS = 1e-6
 
