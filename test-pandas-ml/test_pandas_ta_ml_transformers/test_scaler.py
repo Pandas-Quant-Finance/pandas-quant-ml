@@ -31,6 +31,13 @@ class TestScaler(TestCase):
         c = t.transform(df)
         i = t.inverse(c)
 
+        self.assertListEqual(
+            c.columns.tolist(),
+            [
+                ('Close', 't-3'), ('Close', 't-2'), ('Close', 't-1'), ('Close', 't-0'),
+                ('Open', 't-3'), ('Open', 't-2'), ('Open', 't-1'), ('Open', 't-0'),
+            ]
+        )
         pd.testing.assert_frame_equal(i, df)
 
     def test_CumProd(self):
