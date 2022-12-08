@@ -1,29 +1,13 @@
 """Augment pandas DataFrame with methods for technical quant analysis"""
 __version__ = '0.3.0'
 
-from itertools import chain
+from functools import partial as _partial
 
+from pandas_df_commons._utils.patching import _monkey_patch_dataframe, _add_functions
 
-class _ML(object):
+_ML = _add_functions(
+    'pandas_quant_ml.analytics', 'pandas_quant_ml.transformers',
+    filter=lambda x: x[3:] if x.startswith("ml_") else None
+)
 
-    def __init__(self, df):
-        from pandas_quant_ml import analytics as anal
-        from pandas_quant_ml import transformers as trans
-        from functools import partial, wraps
-
-        self.df = df
-
-        for name, func in chain(anal.__dict__.items(), trans.__dict__.items()):
-            if name.startswith("ml_"):
-                self.__dict__[name[3:]] = wraps(func)(partial(func, self.df))
-
-
-def monkey_patch_dataframe(extender='ml'):
-    from pandas.core.base import PandasObject
-
-    existing = getattr(PandasObject, extender, None)
-    if existing is not None:
-        if not isinstance(existing.fget(None), _ML):
-            raise ValueError(f"field already exists as {type(existing)}")
-
-    setattr(PandasObject, extender, property(lambda self: _ML(self)))
+monkey_patch_dataframe = _partial(_monkey_patch_dataframe, extension_default_value='ml', extension_class=_ML)
