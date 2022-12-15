@@ -5,7 +5,7 @@ import pandas as pd
 
 from pandas_df_commons.indexing.decorators import foreach_top_level_row, foreach_top_level_column
 from pandas_quant_ml._abstract import Transformer
-from pandas_quant_ml.utils.rescaler import ReScaler
+from pandas_df_commons._utils.rescaler import ReScaler
 
 
 @foreach_top_level_column
