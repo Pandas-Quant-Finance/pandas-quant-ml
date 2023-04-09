@@ -63,3 +63,19 @@ class TestMlTrainingLoop(TestCase):
             np.hstack([df.loc["A"]["label"][2:].values, df.loc["B"]["label"][2:].values]),
             res
         )
+
+    def test_training_loop_simple_shuffled(self):
+        df = DF.copy()
+        df["label"] = df.index
+
+        res = list(training_loop(df, [0, 1], "label", 4, shuffle=True))
+        for f, i in res:
+            np.testing.assert_almost_equal(df.loc[i][[0, 1]].values, f)
+
+    def test_training_loop_window_shuffled(self):
+        df = DF.copy()
+        df["label"] = df.index
+
+        res = list(training_loop(df, [0, 1], "label", 4, 3, shuffle=True))
+        for f, i in res:
+            np.testing.assert_almost_equal(df.loc[i][[0, 1]].values, f[:, -1, :])
