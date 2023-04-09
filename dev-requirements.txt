@@ -4,3 +4,4 @@ jupyter
 jupyter-client
 tabulate
 pathos
+matplotlib

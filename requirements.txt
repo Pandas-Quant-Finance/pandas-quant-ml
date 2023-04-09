@@ -1,1 +1,6 @@
-yfinance
+pandas-df-commons @ git+https://github.com/Pandas-Quant-Finance/pandas-df-commons
+statsmodels
+sklearn
+scipy
+pandas
+numpy
