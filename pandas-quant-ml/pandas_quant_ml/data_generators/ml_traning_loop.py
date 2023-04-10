@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator
+from typing import Generator, Tuple
 import random
 
 import numpy as np
@@ -18,7 +18,7 @@ def training_loop(
         feature_look_back_window: int = None,
         label_look_back_window: int = None,
         shuffle: bool = False,
-) -> Generator[pd.DataFrame, None, None]:
+) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
     feature_generator = batch_generator(
         df[feature_columns], batch_size=batch_size, look_back_window=feature_look_back_window, shuffle=shuffle)
 
@@ -36,7 +36,7 @@ def batch_generator(
         batch_size: int = 128,
         look_back_window: int = None,
         shuffle: bool = False,
-) -> Generator[pd.DataFrame, None, None]:
+) -> Generator[Tuple[pd.Index, np.ndarray], None, None]:
     top_level_rows = get_top_level_rows(df)
     top_level_columns = None  # get_top_level_columns(df, level=col_level) if column_aggregator is not None else None
     index_generator = top_level_separator_generator(df, top_level_rows, top_level_columns, 0, shuffle_rows=shuffle)

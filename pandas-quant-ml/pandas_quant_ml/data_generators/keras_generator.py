@@ -1,62 +1,84 @@
-import keras
+from threading import Lock
+
+from tensorflow import keras
+import numpy as np
 import pandas as pd
 
-from .ml_traning_loop import batch_generator
+from pandas_df_commons.indexing._utils import get_top_level_rows
+from .ml_traning_loop import training_loop
 
 
-class DataGenerator(keras.utils.Sequence):
+class KerasDfDataGenerator(keras.utils.Sequence):
 
     def __init__(
             self,
             df: pd.DataFrame,
+            feature_columns,
+            label_columns,
             batch_size=32,
-            look_back_window: int = None,
-            shuffle=True,
+            feature_look_back_window: int = None,
+            label_look_back_window: int = None,
+            shuffle=False,
+            on_get_batch=None,
     ):
         self.df = df
         self.batch_size = batch_size
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.n_channels = n_channels
-        self.n_classes = n_classes
         self.shuffle = shuffle
+        self.feature_columns = feature_columns
+        self.label_columns = label_columns
+        self.feature_look_back_window = feature_look_back_window
+        self.label_look_back_window = label_look_back_window
+        self.on_get_batch = on_get_batch
+
+        self.lock = Lock()
+        self.length = self.__calc_length__()
+        self.looper = None
+
+        # initialize looper
         self.on_epoch_end()
 
     def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        # Denotes the number of batches per epoch
+        return self.length
 
     def __getitem__(self, index):
-        'Generate one batch of data'
-        # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
-
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        with self.lock:
+            X, y = next(self.looper)
 
+            if self.on_get_batch is not None:
+                self.on_get_batch(index, X, y)
+
+        print(index, len(X))
         return X, y
 
     def on_epoch_end(self):
-        'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+        # print("on epoch end")
+        with self.lock:
+            self.looper = training_loop(
+                self.df,
+                self.feature_columns,
+                self.label_columns,
+                self.batch_size,
+                self.feature_look_back_window,
+                self.label_look_back_window,
+                shuffle=self.shuffle,
+            )
 
-    def __data_generation(self, list_IDs_temp):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size), dtype=int)
+    def __calc_length__(self):
+        if self.label_look_back_window is not None:
+            raise NotImplemented
 
-        # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            # Store sample
-            X[i,] = np.load('data/' + ID + '.npy')
+        if self.feature_look_back_window is None:
+            # ceil(Len(df)/batch size)
+            length = np.ceil(len(self.df) / self.batch_size)
+        else:
+            # ceil(for each TL row.index.apply(Len(i) - window size+1).sum / batch size )
+            top_level_rows = get_top_level_rows(self.df)
+            length = np.ceil(
+                np.sum(
+                    [self.df[tlr].shape[0] - self.feature_look_back_window + 1 for tlr in top_level_rows]
+                ) / self.batch_size
+            )
 
-            # Store class
-            y[i] = self.labels[ID]
-
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return int(length)
