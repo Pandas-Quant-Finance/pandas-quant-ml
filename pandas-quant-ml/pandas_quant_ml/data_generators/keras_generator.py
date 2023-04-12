@@ -21,7 +21,8 @@ class KerasDfDataGenerator(keras.utils.Sequence):
             shuffle=False,
             on_get_batch=None,
     ):
-        self.df = df
+        super().__init__()
+        self.df = df.dropna()
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.feature_columns = feature_columns
@@ -44,26 +45,37 @@ class KerasDfDataGenerator(keras.utils.Sequence):
     def __getitem__(self, index):
         # Generate data
         with self.lock:
-            X, y = next(self.looper)
+            for i in range(2):
+                # workaround for: https://github.com/keras-team/keras/issues/17946
+                try:
+                    X, y = next(self.looper)
+                    break
+                except StopIteration as e:
+                    if i < 1:
+                        self.__init_looper__()
+                    else:
+                        raise e
 
             if self.on_get_batch is not None:
                 self.on_get_batch(index, X, y)
 
-        print(index, len(X))
-        return X, y
+            return X, y
 
     def on_epoch_end(self):
         # print("on epoch end")
         with self.lock:
-            self.looper = training_loop(
-                self.df,
-                self.feature_columns,
-                self.label_columns,
-                self.batch_size,
-                self.feature_look_back_window,
-                self.label_look_back_window,
-                shuffle=self.shuffle,
-            )
+            self.__init_looper__()
+
+    def __init_looper__(self):
+        self.looper = training_loop(
+            self.df,
+            self.feature_columns,
+            self.label_columns,
+            self.batch_size,
+            self.feature_look_back_window,
+            self.label_look_back_window,
+            shuffle=self.shuffle,
+        )
 
     def __calc_length__(self):
         if self.label_look_back_window is not None:
@@ -71,14 +83,17 @@ class KerasDfDataGenerator(keras.utils.Sequence):
 
         if self.feature_look_back_window is None:
             # ceil(Len(df)/batch size)
-            length = np.ceil(len(self.df) / self.batch_size)
+            length = len(self.df) / self.batch_size
         else:
             # ceil(for each TL row.index.apply(Len(i) - window size+1).sum / batch size )
             top_level_rows = get_top_level_rows(self.df)
-            length = np.ceil(
-                np.sum(
-                    [self.df[tlr].shape[0] - self.feature_look_back_window + 1 for tlr in top_level_rows]
+            if top_level_rows:
+                length = np.sum(
+                    [self.df.loc[tlr].shape[0] - self.feature_look_back_window + 1 for tlr in top_level_rows]
                 ) / self.batch_size
-            )
+            else:
+                length = (
+                    self.df.shape[0] - self.feature_look_back_window + 1
+                ) / self.batch_size
 
-        return int(length)
+        return int(np.ceil(length))
