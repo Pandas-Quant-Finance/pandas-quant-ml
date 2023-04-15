@@ -79,3 +79,23 @@ class TestMlTrainingLoop(TestCase):
         res = list(training_loop(df, [0, 1], "label", 4, 3, shuffle=True))
         for f, i in res:
             np.testing.assert_almost_equal(df.loc[i][[0, 1]].values, f[:, -1, :])
+
+    def test_weights_and_transformer(self):
+        df = DF.copy()
+        df["label"] = df.index.get_level_values(1)
+        df["weight"] = range(len(df))
+
+        features_lables_weights = list(
+            training_loop(
+                df, [0, 1], "label", 4, label_weight_columns="weight",
+                label_transformer=lambda l: l *10
+            )
+        )
+        features = np.concatenate([flw[0] for flw in features_lables_weights])
+        labels = np.concatenate([flw[1] for flw in features_lables_weights])
+        weights = np.concatenate([flw[2] for flw in features_lables_weights])
+
+        np.testing.assert_almost_equal(df[[0, 1]].values, features)
+        np.testing.assert_almost_equal(df["label"].values * 10, labels)
+        np.testing.assert_almost_equal(df["weight"].values, weights)
+

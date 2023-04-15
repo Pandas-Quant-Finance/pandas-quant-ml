@@ -1,4 +1,6 @@
+from __future__ import annotations
 from threading import Lock
+from typing import Callable
 
 from tensorflow import keras
 import numpy as np
@@ -7,28 +9,35 @@ import pandas as pd
 from pandas_df_commons.indexing._utils import get_top_level_rows
 from .ml_traning_loop import training_loop
 
+import logging
+_LOG = logging.getLogger(__name__)
+
 
 class KerasDfDataGenerator(keras.utils.Sequence):
 
     def __init__(
             self,
             df: pd.DataFrame,
-            feature_columns,
-            label_columns,
-            batch_size=32,
+            feature_columns: str | list,
+            label_columns: str | list,
+            batch_size: int = 32,
             feature_look_back_window: int = None,
             label_look_back_window: int = None,
-            shuffle=False,
-            on_get_batch=None,
+            shuffle: bool = False,
+            label_weight_columns: list | str | None = None,
+            label_transformer: Callable[[np.ndarray], np.ndarray] | None = None,
+            on_get_batch: Callable[[tuple], None]=None,
     ):
         super().__init__()
-        self.df = df.dropna()
+        self.df = df.replace([np.inf, -np.inf, np.nan]).dropna()  # TODO maybe we can only use the looper and clear invalid values inside the batch?
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.feature_columns = feature_columns
         self.label_columns = label_columns
+        self.label_weight_columns = label_weight_columns
         self.feature_look_back_window = feature_look_back_window
         self.label_look_back_window = label_look_back_window
+        self.label_transformer = label_transformer
         self.on_get_batch = on_get_batch
 
         self.lock = Lock()
@@ -37,6 +46,9 @@ class KerasDfDataGenerator(keras.utils.Sequence):
 
         # initialize looper
         self.on_epoch_end()
+
+        if len(self.df) < len(df):
+            _LOG.warning("DataFrame contained inf of nan values (rows got dropped)")
 
     def __len__(self):
         # Denotes the number of batches per epoch
@@ -48,7 +60,7 @@ class KerasDfDataGenerator(keras.utils.Sequence):
             for i in range(2):
                 # workaround for: https://github.com/keras-team/keras/issues/17946
                 try:
-                    X, y = next(self.looper)
+                    X, y = next(self.looper)  # FIXME could have weights
                     break
                 except StopIteration as e:
                     if i < 1:
@@ -75,6 +87,8 @@ class KerasDfDataGenerator(keras.utils.Sequence):
             self.feature_look_back_window,
             self.label_look_back_window,
             shuffle=self.shuffle,
+            label_weight_columns=self.label_weight_columns,
+            label_transformer=self.label_transformer,
         )
 
     def __calc_length__(self):

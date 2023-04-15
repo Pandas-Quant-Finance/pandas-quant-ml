@@ -15,11 +15,11 @@ class ModelScorer(object):
         self.predictor = predictor
 
     def score(self):
-        res = [y - self.predictor(x).reshape(y.shape) for x, y in self.data_generator]
+        res = [(y, self.predictor(x).reshape(y.shape)) for x, y in self.data_generator if len(x) > 0]
 
         if len(res) <= 0: return None
+        y = np.concatenate([y[0] for y in res], axis=0)
+        y_hat = np.concatenate([y[1] for y in res], axis=0)
+        residual = y_hat - y  # 1 - 0.8 = 0.2 vs 0.8 - 1 = -0.2
+        return y, y_hat, residual
 
-        if res[0].ndim == 1:
-            return np.hstack(res)
-        else:
-            return np.stack(res, axis=0)

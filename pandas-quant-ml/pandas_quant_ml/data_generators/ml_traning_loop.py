@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generator, Tuple
+from typing import Generator, Tuple, Callable
 import random
 
 import numpy as np
@@ -18,16 +18,26 @@ def training_loop(
         feature_look_back_window: int = None,
         label_look_back_window: int = None,
         shuffle: bool = False,
-) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+        label_weight_columns: list | str | None = None,
+        label_transformer: Callable[[np.ndarray], np.ndarray] | None = None,
+) -> Generator[Tuple[np.ndarray, np.ndarray] | Tuple[np.ndarray, np.ndarray, np.ndarray], None, None]:
     feature_generator = batch_generator(
         df[feature_columns], batch_size=batch_size, look_back_window=feature_look_back_window, shuffle=shuffle)
 
     for feature_index, feature_batch in feature_generator:
         if label_look_back_window is None:
             label_batch = df.loc[feature_index, label_columns].values
-            yield feature_batch, label_batch
+
+            if label_transformer is not None:
+                label_batch = label_transformer(label_batch)
+
+            if label_weight_columns is not None:
+                weight_batch = df.loc[feature_index, label_weight_columns].values
+                yield feature_batch, label_batch, weight_batch
+            else:
+                yield feature_batch, label_batch
         else:
-            # we would need to find df.loc[index-window:index] for each index
+            # we would need to find df.(i)loc[index-window:index] for each index
             raise NotImplemented
 
 
