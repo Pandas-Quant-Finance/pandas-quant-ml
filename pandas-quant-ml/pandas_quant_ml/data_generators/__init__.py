@@ -1,1 +1,1 @@
-from .ml_traning_loop import batch_generator
+from .ml_traning_loop import BatchGenerator, TrainingLoop

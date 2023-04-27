@@ -11,6 +11,16 @@ from pandas_quant_ml.model_scoring.model_scorer import ModelScorer
 
 class TestKerasGenerator(TestCase):
 
+    def test_concept(self):
+        df = get_x_or()
+        it = KerasDfDataGenerator(df, [0, 1], 'label', batch_size=6)
+        samples = 0
+        for epoch in range(2):
+            for i in range(len(it)):
+               samples += len(it[i][0])
+
+        self.assertEquals(len(df) * 2, samples)
+
     def test_simple(self):
         df = get_x_or()
         print(df.tail())
