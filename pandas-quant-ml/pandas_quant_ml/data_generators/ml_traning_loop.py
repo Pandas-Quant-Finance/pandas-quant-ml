@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from pandas_df_commons._utils.batch import Batch
 from pandas_df_commons._utils.streaming import Window
 from pandas_df_commons.indexing._utils import get_top_level_rows, top_level_separator_generator
 
@@ -116,7 +115,7 @@ class BatchGenerator(object):
         self.look_back_window = look_back_window
 
         self.batched_windows = [
-            Batch(Window(sub_df, look_back_window, shuffle=shuffle), batch_size, top_level_row=tl_row)
+            Batch(Window(sub_df, look_back_window, shuffle=shuffle), batch_size or len(sub_df), top_level_row=tl_row)
             for (_, tl_row), sub_df in top_level_separator_generator(
                 self.df,
                 get_top_level_rows(self.df),

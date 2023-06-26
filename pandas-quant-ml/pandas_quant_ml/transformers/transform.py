@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -22,9 +22,10 @@ def ml_features_labels(
         df: pd.DataFrame,
         feature_transformer: Transformer,
         label_transformer: Transformer,
+        # TODO add weights_transformer: Transformer = None,
         labels_shift=-1,
         replace_inf=np.nan
-):
+) -> Tuple[pd.DataFrame, pd.DataFrame, _Invertor]:
     if labels_shift > 0:
         _log.warning(f"Do you really want to shift positive? Like the past {labels_shift} values to the future ")
 
