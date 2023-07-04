@@ -36,7 +36,7 @@ class Lambda(DataTransformer):
         if self.names is not None:
             df = df.rename(columns=dict(zip(df.columns, self.names)))
 
-        return df
+        return df.dropna()
 
     def _inverse(self, df: pd.DataFrame) -> pd.DataFrame | None:
         return self.inv_func(df).rename(columns=self._original_names) if self.inv_func is not None else None

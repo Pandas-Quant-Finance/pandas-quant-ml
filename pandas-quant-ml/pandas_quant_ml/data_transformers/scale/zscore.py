@@ -19,6 +19,8 @@ class ZScore(DataTransformer):
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         df /= df.rolling(self.period).std()
+        df = df.dropna()
+
         if self.names is None:
             return df
         else:

@@ -2,7 +2,6 @@ from unittest import TestCase
 
 import numpy as np
 import pandas as pd
-import pandas.testing
 
 from pandas_df_commons.math import col_div
 from pandas_quant_ml.data_transformers.filter.outlier import Winsorize
@@ -85,7 +84,7 @@ class TestDataTransformerUseCase(TestCase):
 
         pipeline = Select("Close") >> Winsorize(252, 5)\
             >> SelectJoin(
-                CalcNormalisedReturns([1, 21, 63, 126, 252], 60,["norm_daily_return", "norm_monthly_return", "norm_quarterly_return", "norm_biannual_return", "norm_annual_return"]),
+                CalcNormalisedReturns([1, 21, 63, 126, 252], 60, names=["norm_daily_return", "norm_monthly_return", "norm_quarterly_return", "norm_biannual_return", "norm_annual_return"]),
                 SelectJoin(*[
                     Lambda(
                         lambda df, *args: col_div(
@@ -111,8 +110,4 @@ class TestDataTransformerUseCase(TestCase):
         pipeline.transform(DF_AAPL, res)
         print(len(res))
 
-        t2 = pipeline >> MovingWindow(252, 252)
-        t2.reset()
-        foo = t2.fit_transform(DF_AAPL[["Open", "Close"]], 0)
-        print(foo)
 

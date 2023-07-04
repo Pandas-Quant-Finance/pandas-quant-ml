@@ -8,10 +8,9 @@ from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 class MovingWindow(DataTransformer):
 
-    def __init__(self, periods: int, step: int = 1, axis=0):
+    def __init__(self, periods: int, axis=0):
         super().__init__()
         self.period = periods
-        self.step = step
         self.axis = axis
 
     def _fit(self, df: pd.DataFrame):
@@ -19,10 +18,11 @@ class MovingWindow(DataTransformer):
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         w = Window(df, self.period)
-        indexes = [i for i in range(0, len(w), self.step)]
 
-        if indexes[-1] < len(w) - 1:
-            indexes.append(len(w) - 1)
-
-        return pd.concat([w[i] for i in indexes], keys=range(len(indexes)), axis=self.axis)
+        all_windows = list(w)
+        return pd.concat(
+            all_windows,
+            keys=[(w.index if self.axis==0 else w.columns)[-1] for w in all_windows],
+            axis=self.axis
+        ).sort_index()
 

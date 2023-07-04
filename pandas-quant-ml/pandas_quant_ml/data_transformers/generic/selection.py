@@ -47,7 +47,7 @@ class SelectJoin(DataTransformer):
         self.resulting_columns = [f.columns.tolist() for f in dfs]
         if queue is not None: queue.append(queues)
 
-        return pd.concat(dfs, axis=1)
+        return pd.concat(dfs, axis=1, join='inner', sort=True)
 
     def reset(self):
         super().reset()
