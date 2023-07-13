@@ -44,6 +44,8 @@ class TestFullMLUseCse(TestCase):
             # feature_shape=(252, 9)
         )
 
-        train, test = looper.train_test_iterator([("AAPL", DF_AAPL)], nth_row_only=252)
+        train, test = looper.train_test_iterator([("AAPL", DF_AAPL)]) #, nth_row_only=252)
         for t in train:
+            print(t[1].shape)
+        for t in test:
             print(t[1].shape)

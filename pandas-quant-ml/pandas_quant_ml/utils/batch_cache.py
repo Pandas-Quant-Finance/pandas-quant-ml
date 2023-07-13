@@ -13,6 +13,12 @@ class BatchCache(object):
     def __init__(self, shuffle: bool = False):
         self.shuffle = shuffle
 
+    def __getitem__(self, item) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        pass
+
+    def __len__(self):
+        pass
+
     def add_batch(self, index: np.ndarray, features: np.ndarray, labels: np.ndarray, weights: np.ndarray):
         pass
 
