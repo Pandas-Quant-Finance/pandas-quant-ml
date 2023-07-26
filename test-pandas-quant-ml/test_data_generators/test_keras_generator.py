@@ -1,4 +1,5 @@
 import os
+import unittest
 from datetime import datetime
 
 from pandas_quant_ml.data_generators.train_loop_data_generator import TrainTestLoop
@@ -67,6 +68,7 @@ class TestKerasGenerator(TestCase):
         #).score()
         #print(residuals)
 
+    @unittest.skip('lookback window is obsolete')
     def test_lookback_window(self):
         df = get_x_or()
         print(df.tail())

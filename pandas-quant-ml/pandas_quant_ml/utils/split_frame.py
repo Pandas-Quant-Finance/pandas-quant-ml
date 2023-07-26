@@ -1,8 +1,10 @@
+import logging
 from typing import Tuple
 
 import pandas as pd
 
 from pandas_df_commons.indexing.multiindex_utils import unique_level_values
+_LOG = logging.getLogger(__name__)
 
 
 def split_frames(*frames: pd.DataFrame, test_length=None, split_index=None) -> Tuple[Tuple[pd.DataFrame, ...], Tuple[pd.DataFrame, ...]]:
@@ -22,6 +24,7 @@ def get_split_index(df, test_length):
     idx = len(split_idx) - test_length
 
     if idx < 0 or idx >= len(split_idx):
+        _LOG.warning("Not enough data to split into training and test set")
         return None
     else:
         return split_idx[len(split_idx) - test_length]

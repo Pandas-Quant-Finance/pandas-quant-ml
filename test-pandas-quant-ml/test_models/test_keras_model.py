@@ -32,3 +32,24 @@ class TestKerasModel(TestCase):
         pdf = next(model.predict(df, include_labels=True))
         print(pdf)
 
+    def test_train_test_simple(self):
+        df = get_x_or()
+
+        model = KerasModel(
+            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=0.75, batch_size=6),
+            keras.Sequential([
+                keras.Input(shape=(2,)),
+                keras.layers.Dense(1, 'sigmoid'),
+            ]),
+            loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
+        )
+
+        model.fit(df, epochs=3)
+        print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+
+        _, pdf = next(model.predict(df, include_labels=True))
+        self.assertEquals((pdf[pdf.columns[-1]] == 'TRAIN').sum(), 38)
+        self.assertEquals((pdf[pdf.columns[-1]] == 'TEST').sum(), 12)
+
+        print(pdf)
+

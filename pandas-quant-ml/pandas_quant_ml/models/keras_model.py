@@ -15,16 +15,17 @@ class KerasModel(object):
     def __init__(
             self,
             looper: TrainTestLoop,
-            model: tf.keras.Model,
+            model: tf.keras.Model | Callable[['MetaData'], tf.keras.Model],
             **kwargs
     ):
         super().__init__()
         self.looper = looper
         self.keras_model = model
+        self.keras_model_compile_args = kwargs
 
         self.history: Dict[str, np.ndarray] = None
 
-        if len(kwargs) > 0:
+        if len(kwargs) > 0 and isinstance(model, tf.keras.Model):
             model.compile(**kwargs)
 
     def fit(
@@ -34,11 +35,19 @@ class KerasModel(object):
             workers: int = 1,
             use_multiprocessing: bool = False,
             keras_fit_kwargs: Dict = None,
-            **kwargs
+            data_generator_kwargs: Dict = None,
+            **kwargs,
     ) -> Callable[[], Generator[Tuple[Any, pd.DataFrame], None, None]]:
-        train, test = self.looper.train_test_iterator(frames)
-        train_it = KerasDataGenerator(train, **kwargs)
-        test_it = KerasDataGenerator(test, **kwargs)
+        train, test = self.looper.train_test_iterator(frames, **kwargs)
+
+        if callable(self.keras_model) and not isinstance(self.keras_model, tf.keras.Model):
+            # Only now we know the meta-data
+            self.keras_model = self.keras_model(self.looper.meta_data)
+            if len(self.keras_model_compile_args) > 0:
+                self.keras_model.compile(**self.keras_model_compile_args)
+
+        train_it = KerasDataGenerator(train, **(data_generator_kwargs or {}))
+        test_it = KerasDataGenerator(test, **(data_generator_kwargs or {}))
 
         self.history = deepcopy(self.keras_model.fit(
             train_it,
@@ -51,7 +60,6 @@ class KerasModel(object):
         ).history)
 
         def y_true_y_hat():
-            # TODO split into train and test frames
             for prediction in self.predict(frames, include_labels=True):
                 yield prediction
 

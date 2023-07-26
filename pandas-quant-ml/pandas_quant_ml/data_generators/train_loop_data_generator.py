@@ -59,7 +59,7 @@ class TrainTestLoop(object):
             sample_weights: DataTransformer = DataConstant(1.0, "sample_weight"),
             train_test_split_ratio: float | Tuple[float, float] = 0.75,
             batch_size: int = None,
-            include_frame_name_category: bool = False,
+            include_frame_name_category: bool | int = False,
             feature_shape: Tuple[int, ...] = None,
             label_shape: Tuple[int, ...] = None,
             batch_cache: Type[BatchCache] = MemCache,
@@ -77,6 +77,7 @@ class TrainTestLoop(object):
         self._feature_pipelines = defaultdict(lambda: deepcopy(self.feature_pipeline))
         self._label_pipelines = defaultdict(lambda: deepcopy(self.label_pipeline))
         self._sample_weights_pipelines = defaultdict(lambda: deepcopy(self.sample_weights))
+        self._split_indices = {}
         self._meta_data: MetaData = None
 
     @property
@@ -145,19 +146,21 @@ class TrainTestLoop(object):
             label_df = self._label_pipelines[name].fit_transform(df, test_length)
             weight_df = self._sample_weights_pipelines[name].fit_transform(df, 0)
 
-            if self.include_frame_name_category:
-                category = next(i for i, k in enumerate(self._feature_pipelines.keys()) if k == name)
-                feature_df.insert(0, "frame_name_category", category)
+            # add categorical variable for frame name if requested
+            feature_df = self._add_frame_name_category(name, feature_df)
 
             # fix leaking test data into training data by fixing the test data length
             level = 0 if feature_df.index.nlevels != label_df.index.nlevels else None
             predicted_periods = len(pd.unique(loc_at_level(feature_df, slice(last_index_value(label_df, 0), None, None), level).index.get_level_values(0))) - 1
             test_length -= predicted_periods
-            split_idx = get_split_index(df, test_length)
 
             # align frames at common index because of different length after data pipelines
             feature_df, label_df = frames_at_common_index(feature_df, label_df, level=level)
             weight_df = weight_df.loc[label_df.index if weight_df.index.nlevels == label_df.index.nlevels else get_top_level_rows(label_df)]
+
+            # find index to split data into train and test set
+            split_idx = get_split_index(feature_df, test_length)
+            self._split_indices[name] = (split_idx, split_idx)
 
             # if skip data, i.e. if no overlapping data should be used for training from moving windows
             if nth_row_only is not None:
@@ -171,6 +174,7 @@ class TrainTestLoop(object):
             if self.train_test_split_ratio[1] > 0:
                 data_length = len(unique_level_values(label_test_df))
                 test_length = int(data_length - data_length * self.train_test_split_ratio[1])
+                self._split_indices[name][1] = (label_test_df.index[-test_length],)
                 (feature_val_df, label_val_df, weight_val_df), (feature_test_df, label_test_df, weight_test_df) =\
                     split_frames(feature_test_df, label_test_df, weight_test_df, test_length=test_length)
             else:
@@ -194,7 +198,7 @@ class TrainTestLoop(object):
             for b in batches:
                 values = self.get_features_in_shape(b)
                 predicted = predictor(*values)
-                predicted_dfs.append(pd.DataFrame(predicted, index=b.index))
+                predicted_dfs.append(pd.DataFrame(predicted.reshape(len(b.index), -1), index=b.index))
 
             return pd.concat(predicted_dfs, axis=0)
 
@@ -212,12 +216,30 @@ class TrainTestLoop(object):
             feature_df = self._feature_pipelines[name].transform(df, queue)
             labels_df = self._label_pipelines[name].transform(df)
 
+            # add categorical variable for frame name if requested
+            feature_df = self._add_frame_name_category(name, feature_df)
+
             batcher = Batch(feature_df, self.batch_size or len(feature_df))
             predicted_df = predictor(batcher)
             predicted_df.columns = labels_df.columns
 
             # predicted_df = self._label_pipelines[name].inverse(predicted_df)
-            yield name, (predicted_df.join(labels_df, how='outer', rsuffix='_TRUE') if include_labels else predicted_df)
+            if include_labels:
+                predicted_df = predicted_df.join(labels_df, how='outer', rsuffix='_TRUE')
+                predicted_df["_SAMPLE_"] = 'TRAIN'
+                if self._split_indices[name][0] is not None:
+                    predicted_df.loc[self._split_indices[name][0]:, "_SAMPLE_"] = 'VAL'
+                    predicted_df.loc[self._split_indices[name][1]:, "_SAMPLE_"] = 'TEST'
+
+            yield name, predicted_df
+
+    def _add_frame_name_category(self, name, df):
+        if self.include_frame_name_category:
+            category = next(i for i, k in enumerate(self._feature_pipelines.keys()) if k == name)
+            pos = self.include_frame_name_category if isinstance(self.include_frame_name_category, int) else 0
+            df.insert(df.shape[1] + pos + 1 if pos < 0 else pos, "frame_name_category", category)
+
+        return df
 
 
 @dataclass
