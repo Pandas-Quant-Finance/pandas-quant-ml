@@ -5,7 +5,7 @@ from pandas_quant_ml.data_generators.train_loop_data_generator import TrainTestL
 from pandas_quant_ml.data_transformers.filter.outlier import Winsorize
 from pandas_quant_ml.data_transformers.generic.lambda_transform import Lambda
 from pandas_quant_ml.data_transformers.generic.selection import Select, SelectJoin
-from pandas_quant_ml.data_transformers.generic.shift import PredictPeriods
+from pandas_quant_ml.data_transformers.generic.shift import PredictDateTimePeriods
 from pandas_quant_ml.data_transformers.generic.windowing import MovingWindow
 from pandas_quant_ml.data_transformers.normalizer.normalized_returns import CalcNormalisedReturns
 from pandas_quant_ml.data_transformers.scale.zscore import ZScore
@@ -32,11 +32,11 @@ class TestFullMLUseCse(TestCase):
                         for args in [(8, 24, 9), (16, 48, 9), (32, 96, 9)]])
                 ) >> MovingWindow(252),
             # labels: 0.15 = 15% volatility target
-            Select("Close")\
-                >> Winsorize(252, 5)\
-                >> CalcNormalisedReturns(1, 60, 0.15, names="target_return") \
-                >> PredictPeriods(1)\
-                >> MovingWindow(252),
+            Select("Close") \
+            >> Winsorize(252, 5) \
+            >> CalcNormalisedReturns(1, 60, 0.15, names="target_return") \
+            >> PredictDateTimePeriods(1) \
+            >> MovingWindow(252),
             # train test split
             train_test_split_ratio=0.9,
             batch_size=100,

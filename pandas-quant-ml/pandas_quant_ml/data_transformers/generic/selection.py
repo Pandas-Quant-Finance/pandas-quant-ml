@@ -9,7 +9,7 @@ from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 class Select(DataTransformer):
 
-    def __init__(self, *columns, names: str|Iterable[str]|Callable[[str], str]=None,):
+    def __init__(self, *columns, names: Iterable[str]|Callable[[str], str]=None,):
         super().__init__()
         self.columns = list(columns)
         self.names = names
@@ -17,16 +17,18 @@ class Select(DataTransformer):
         self._original_names = None
 
     def _fit(self, df: pd.DataFrame):
-        self._original_names = df.columns
+        self._original_names = self.columns
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df[self.columns]
         if self.names is not None:
-            df = df.rename(columns=self.names)
+            df = df.rename(
+                columns=self.names if callable(self.names) else dict(zip(df.columns, self.names))
+            )
         return df
 
-    def _inverse(self, df: pd.DataFrame) -> pd.DataFrame | None:
-        return df.rename(columns=self._original_names)
+    def _inverse(self, df: pd.DataFrame, prev_df: pd.DataFrame) -> pd.DataFrame:
+        return df.rename(columns=dict(zip(df.columns, self._original_names)))
 
 
 class SelectJoin(DataTransformer):
@@ -38,16 +40,17 @@ class SelectJoin(DataTransformer):
 
     def transform(self, df: pd.DataFrame, queue: List[pd.DataFrame] = None):
         if isinstance(df, pd.Series): df = df.to_frame()
+        if queue is None or queue is True: queue = [df]
 
         if self._previous is not None:
-            df = self._previous.transform(df, queue)
+            df, _ = self._previous.transform(df, queue)
 
         queues = [[] for _ in self.selectors]
-        dfs = [se.transform(df, q) for se, q in zip(self.selectors, queues)]
+        dfs = [se.transform(df, q)[0] for se, q in zip(self.selectors, queues)]
         self.resulting_columns = [f.columns.tolist() for f in dfs]
-        if queue is not None: queue.append(queues)
+        if isinstance(queue, List): queue.append(queues)
 
-        return pd.concat(dfs, axis=1, join='inner', sort=True)
+        return pd.concat(dfs, axis=1, join='inner', sort=True), queue
 
     def reset(self):
         super().reset()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
@@ -17,6 +18,10 @@ from pandas_quant_ml.data_transformers.generic.constant import DataConstant
 from pandas_quant_ml.utils.batch_cache import BatchCache, MemCache
 from pandas_quant_ml.utils.iter_utils import make_iterable
 from pandas_quant_ml.utils.split_frame import split_frames, get_split_index
+
+
+_LOG = logging.getLogger(__name__)
+
 
 """
    TODO  
@@ -142,9 +147,9 @@ class TrainTestLoop(object):
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
             data_length = len(unique_level_values(df))
             test_length = int(data_length - data_length * self.train_test_split_ratio[0])
-            feature_df = self._feature_pipelines[name].fit_transform(df, test_length)
-            label_df = self._label_pipelines[name].fit_transform(df, test_length)
-            weight_df = self._sample_weights_pipelines[name].fit_transform(df, 0)
+            feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length)
+            label_df, _ = self._label_pipelines[name].fit_transform(df, test_length)
+            weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0)
 
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
@@ -212,18 +217,21 @@ class TrainTestLoop(object):
             include_labels: bool = False,
     ):
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
-            queue = [df]
-            feature_df = self._feature_pipelines[name].transform(df, queue)
-            labels_df = self._label_pipelines[name].transform(df)
+            feature_df, _ = self._feature_pipelines[name].transform(df, False)
+            labels_df, queue = self._label_pipelines[name].transform(df)
 
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
 
             batcher = Batch(feature_df, self.batch_size or len(feature_df))
             predicted_df = predictor(batcher)
-            predicted_df.columns = labels_df.columns
+            predicted_df.columns = labels_df.columns  # FIXME might be different i.e. for distributions
 
-            # predicted_df = self._label_pipelines[name].inverse(predicted_df)
+            try:
+                predicted_df = self._label_pipelines[name].inverse(predicted_df, queue)
+            except NotImplementedError as e:
+                _LOG.warning(e)
+
             if include_labels:
                 predicted_df = predicted_df.join(labels_df, how='outer', rsuffix='_TRUE')
                 predicted_df["_SAMPLE_"] = 'TRAIN'

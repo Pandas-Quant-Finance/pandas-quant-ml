@@ -7,7 +7,6 @@ from pandas_df_commons.math import col_div
 from pandas_quant_ml.data_transformers.filter.outlier import Winsorize
 from pandas_quant_ml.data_transformers.generic.lambda_transform import Lambda
 from pandas_quant_ml.data_transformers.generic.selection import Select, SelectJoin
-from pandas_quant_ml.data_transformers.generic.windowing import MovingWindow
 from pandas_quant_ml.data_transformers.normalizer.normalized_returns import CalcNormalisedReturns
 from pandas_quant_ml.data_transformers.scale.zscore import ZScore
 from pandas_ta.technical_analysis import ta_macd
@@ -15,28 +14,6 @@ from tesing_data import DF_AAPL
 
 
 class TestDataTransformerUseCase(TestCase):
-
-    def test_simple(self):
-        dt = Select("Close")\
-             >> Winsorize(252, 5)\
-             >> CalcNormalisedReturns([1, 21, 63, 126, 252], 60,)
-
-        dt.fit_transform(DF_AAPL, 20)
-        print(dt.transform(DF_AAPL))
-        print(dt.inverse(dt.transform(DF_AAPL)))
-
-    def test_join(self):
-        dt = Select("Close")\
-             >> Winsorize(252, 5)\
-             >> SelectJoin(
-                CalcNormalisedReturns([1, 21, 63, 126, 252], 60, )
-             )
-
-        dt.fit_transform(DF_AAPL, 20)
-        visitor = []
-        print(dt.transform(DF_AAPL, visitor))
-        print(dt.inverse(dt.transform(DF_AAPL)))
-
 
     def test_mom_trans(self):
         def legacy(df_asset: pd.DataFrame, price='Close') -> pd.DataFrame:
