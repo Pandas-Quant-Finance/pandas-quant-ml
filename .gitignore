@@ -1,0 +1,5 @@
+__*/
+__pycache__/
+*scratch*
+dist/
+*.egg-info
