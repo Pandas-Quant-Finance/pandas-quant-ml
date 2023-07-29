@@ -61,7 +61,7 @@ class TrainTestLoop(object):
             self,
             feature_pipeline: DataTransformer,
             label_pipeline: DataTransformer,
-            sample_weights: DataTransformer = DataConstant(1.0, "sample_weight"),
+            sample_weights: DataTransformer = None,
             train_test_split_ratio: float | Tuple[float, float] = 0.75,
             batch_size: int = None,
             include_frame_name_category: bool | int = False,
@@ -81,7 +81,7 @@ class TrainTestLoop(object):
 
         self._feature_pipelines = defaultdict(lambda: deepcopy(self.feature_pipeline))
         self._label_pipelines = defaultdict(lambda: deepcopy(self.label_pipeline))
-        self._sample_weights_pipelines = defaultdict(lambda: deepcopy(self.sample_weights))
+        self._sample_weights_pipelines = defaultdict(lambda: deepcopy(self.sample_weights) if self.sample_weights is not None else None)
         self._split_indices = {}
         self._meta_data: MetaData = None
 
@@ -111,11 +111,14 @@ class TrainTestLoop(object):
                     if categorical is None: categorical = [i for i, dt in enumerate(b[0].dtypes) if dt != 'float']
                     for c in categorical: categories[c].update(pd.unique(b[0].iloc[:, c]))
 
+                    features_in_shape = self.get_features_in_shape(b[0])
+                    labels_in_shape = self.get_labels_in_shape(b[1])
+                    index_in_shape = b[0].index.values.reshape(labels_in_shape[0].shape[:-1])
                     cache.add_batch(
-                        b[0].index.values,
-                        *self.get_features_in_shape(b[0]), # TODO Later we want to allow tuple numpy arrays for different fetatures/labels like int, float
-                        *self.get_labels_in_shape(b[1]),
-                        b[2].values,
+                        index_in_shape,
+                        *features_in_shape, # TODO Later we want to allow tuple numpy arrays for different fetatures/labels like int, float
+                        *labels_in_shape,
+                        b[2].values.reshape(index_in_shape.shape),
                     )
 
         self._meta_data = MetaData(
@@ -149,7 +152,10 @@ class TrainTestLoop(object):
             test_length = int(data_length - data_length * self.train_test_split_ratio[0])
             feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length)
             label_df, _ = self._label_pipelines[name].fit_transform(df, test_length)
-            weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0)
+            if self._sample_weights_pipelines[name] is not None:
+                weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0)
+            else:
+                weight_df = label_df[[]].assign(w=1.0)
 
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
@@ -171,10 +177,12 @@ class TrainTestLoop(object):
             if nth_row_only is not None:
                 feature_df = nth(feature_df, nth_row_only, level=0)
                 label_df = nth(label_df, nth_row_only, level=0)
+                weight_df = nth(weight_df, nth_row_only, level=0)
 
             # split training and test/validation data
             (feature_train_df, label_train_df, weight_train_df), (feature_test_df, label_test_df, weight_test_df) =\
                 split_frames(feature_df, label_df, weight_df, split_index=split_idx)
+            _LOG.info(f"Train test split for {name}: {len(feature_train_df)} / {len(feature_test_df)}")
 
             if self.train_test_split_ratio[1] > 0:
                 data_length = len(unique_level_values(label_test_df))
@@ -225,7 +233,11 @@ class TrainTestLoop(object):
 
             batcher = Batch(feature_df, self.batch_size or len(feature_df))
             predicted_df = predictor(batcher)
-            predicted_df.columns = labels_df.columns  # FIXME might be different i.e. for distributions
+
+            # fix prediction column names. Note that it can be that the coulmn count is different
+            # i.e. when using a float as label but the model predicts a pobability distribution
+            if len(predicted_df.columns) == len(labels_df.columns):
+                predicted_df.columns = labels_df.columns
 
             try:
                 predicted_df = self._label_pipelines[name].inverse(predicted_df, queue)

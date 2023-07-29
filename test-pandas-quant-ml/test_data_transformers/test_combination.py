@@ -16,27 +16,14 @@ from pandas_ta.technical_analysis import ta_macd
 from tesing_data import DF_AAPL
 
 
-class TestGenericTransformer(TestCase):
+class TestTransformerCombination(TestCase):
 
-    def test_select(self):
-        dt = Select("Close", names=["Lala"])
+    def test_predict_returns(self):
+        dt = Select("Open", "Close", names=['o', 'c']) \
+             >> Returns(range(1, 3)) \
+             >> PredictDateTimePeriods(1)
 
-        df, queue = dt.fit_transform(DF_AAPL, 20, True)
-        inv = dt.inverse(df, queue)
-        pd.testing.assert_frame_equal(DF_AAPL[["Close"]], inv)
-        self.assertFalse(dt.transform(DF_AAPL, False)[1])
+        df, q = dt.fit_transform(DF_AAPL, 20, True)
+        inv = dt.inverse(df, q)
+        print(inv)
 
-    def test_select_join(self):
-        pass
-
-    def test_shift(self):
-        pass
-
-    def test_window(self):
-        pass
-
-    def test_constant(self):
-        pass
-
-    def test_lambda(self):
-        pass

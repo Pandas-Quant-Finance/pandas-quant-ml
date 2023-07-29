@@ -9,7 +9,7 @@ from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 class ZScore(DataTransformer):
 
-    def __init__(self, period: int, names: str | Iterable[str] | Callable[[str, int], str] = None):
+    def __init__(self, period: int, names: Iterable[str] | Callable[[str, int], str] = None):
         super().__init__()
         self.period = period
         self.names = names

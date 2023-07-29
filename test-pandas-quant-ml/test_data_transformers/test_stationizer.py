@@ -24,8 +24,7 @@ class TestStationizerTransformer(TestCase):
 
     def test_returns2(self):
         dt = Select("Open", "Close", names=['o', 'c']) \
-             >> Returns(range(1, 3)) \
-             >> PredictDateTimePeriods(1)
+             >> Returns(range(1, 3))
 
         df, q = dt.fit_transform(DF_AAPL, 20, True)
         inv = dt.inverse(df, q)
