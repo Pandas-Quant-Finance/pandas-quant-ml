@@ -8,7 +8,7 @@ from pandas_quant_ml.data_transformers.generic.selection import Select, SelectJo
 from pandas_quant_ml.data_transformers.generic.shift import PredictDateTimePeriods
 from pandas_quant_ml.data_transformers.generic.windowing import MovingWindow
 from pandas_quant_ml.data_transformers.normalizer.normalized_returns import CalcNormalisedReturns
-from pandas_quant_ml.data_transformers.scale.zscore import ZScore
+from pandas_quant_ml.data_transformers.scale.zscore import RollingZScore
 from pandas_ta.technical_analysis import ta_macd
 from tesing_data import DF_AAPL
 
@@ -28,7 +28,7 @@ class TestFullMLUseCse(TestCase):
                                 ta_macd(df, *args).droplevel(0, axis=1)['macd'],
                                 df.rolling(63).std()
                             ), *args, names=[f"macd_{args[0]}_{args[1]}"]) \
-                        >> ZScore(252)
+                        >> RollingZScore(252)
                         for args in [(8, 24, 9), (16, 48, 9), (32, 96, 9)]])
                 ) >> MovingWindow(252),
             # labels: 0.15 = 15% volatility target

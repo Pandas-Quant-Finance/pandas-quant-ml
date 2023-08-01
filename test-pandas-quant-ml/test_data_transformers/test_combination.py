@@ -10,7 +10,7 @@ from pandas_quant_ml.data_transformers.generic.selection import Select, SelectJo
 from pandas_quant_ml.data_transformers.generic.shift import PredictDateTimePeriods
 from pandas_quant_ml.data_transformers.generic.windowing import MovingWindow
 from pandas_quant_ml.data_transformers.normalizer.normalized_returns import CalcNormalisedReturns
-from pandas_quant_ml.data_transformers.scale.zscore import ZScore
+from pandas_quant_ml.data_transformers.scale.zscore import RollingZScore
 from pandas_quant_ml.data_transformers.stationizer.returns import Returns
 from pandas_ta.technical_analysis import ta_macd
 from tesing_data import DF_AAPL

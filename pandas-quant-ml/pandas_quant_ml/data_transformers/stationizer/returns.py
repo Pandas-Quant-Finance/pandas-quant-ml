@@ -1,21 +1,22 @@
 from __future__ import annotations
 
 from functools import partial
+from string import Template
 from typing import Iterable, Callable
 
 import numpy as np
 import pandas as pd
 
+from pandas_quant_ml.data_transformers._utils import renaming_columns
 from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 
 class Returns(DataTransformer):
 
-    def __init__(self, periods: int|Iterable[int], names: str|Iterable[str]|Callable[[str, int], str]=None):
+    def __init__(self, periods: int|Iterable[int], names: str|Iterable[str]|Callable[[str, int], str]|Template=Template("${x}_returns_${p}")):
         super().__init__()
         self.periods = periods if isinstance(periods, Iterable) else [periods]
-        self.names = \
-            names if callable(names) else lambda x, i, p: f"{x}_{names[i] if isinstance(names, Iterable) else p}"
+        self.names = names if callable(names) else renaming_columns(names)
 
         self._min_period_columns = None
 

@@ -33,7 +33,7 @@ class CalcNormalisedReturns(DataTransformer):
 
         return pd.concat(
             [((df.pct_change(periods=p) * self.target_vola_scale) / (daily_vol * np.sqrt(p)))\
-                 .rename(columns=partial(self.names, i=i)) for i, p in enumerate(self.periods)],
+                 .rename(columns=partial(self.names, i=i, p=p)) for i, p in enumerate(self.periods)],
             axis=1
         ).sort_index().dropna()
 

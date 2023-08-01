@@ -133,12 +133,12 @@ class TrainTestLoop(object):
         return (train_cache, val_cache, test_cache) if self.train_test_split_ratio[1] > 0 else (train_cache, test_cache)
 
     def get_features_in_shape(self, features: pd.DataFrame) -> Tuple[np.ndarray, ...]:
-        shape = (index_shape(features) + features.shape[1:]) if self.feature_shape is None else self.feature_shape
+        shape = (index_shape(features) + index_shape(features, axis=1)) if self.feature_shape is None else self.feature_shape
         shape = tuple(features.shape[1] if s == -2 else s for s in shape)
         return features.values.reshape(shape),
 
     def get_labels_in_shape(self, labels: pd.DataFrame) -> Tuple[np.ndarray, ...]:
-        shape = (index_shape(labels) + labels.shape[1:]) if self.label_shape is None else self.label_shape
+        shape = (index_shape(labels) + index_shape(labels, axis=1)) if self.label_shape is None else self.label_shape
         shape = tuple(labels.shape[1] if s == -2 else s for s in shape)
         return labels.values.reshape(shape),
 

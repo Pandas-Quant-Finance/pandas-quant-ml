@@ -8,14 +8,14 @@ from pandas_quant_ml.data_transformers.filter.outlier import Winsorize
 from pandas_quant_ml.data_transformers.generic.lambda_transform import Lambda
 from pandas_quant_ml.data_transformers.generic.selection import Select, SelectJoin
 from pandas_quant_ml.data_transformers.normalizer.normalized_returns import CalcNormalisedReturns
-from pandas_quant_ml.data_transformers.scale.zscore import ZScore
+from pandas_quant_ml.data_transformers.scale.zscore import RollingZScore
 from pandas_ta.technical_analysis import ta_macd
 from tesing_data import DF_AAPL
 
 
 class TestDataTransformerUseCase(TestCase):
 
-    def test_mom_trans(self):
+    def test_data_transformation_mom_trans(self):
         def legacy(df_asset: pd.DataFrame, price='Close') -> pd.DataFrame:
             df_asset[df_asset[price] <= 1e-8] = np.nan
 
@@ -67,14 +67,14 @@ class TestDataTransformerUseCase(TestCase):
                         lambda df, *args: col_div(
                             ta_macd(df, *args).droplevel(0, axis=1)['macd'],
                             df.rolling(63).std()
-                        ), *args, names=[f"macd_{args[0]}_{args[1]}"])\
-                        >> ZScore(252)
+                        ), *args, names=[f"macd_{args[0]}_{args[1]}"]) \
+                    >> RollingZScore(252, demean=False)
                     for args in [(8, 24, 9), (16, 48, 9), (32, 96, 9)]])
             ) # >> TODO Window(252, 252)
 
             # TODO     df_asset["target_returns"] = df_asset["daily_returns"] * VOL_TARGET / (df_asset["daily_vol"] * np.sqrt(252)).shift(1)
 
-        transformed = pipeline.fit_transform(DF_AAPL[["Open", "Close"]], 1)
+        transformed, _ = pipeline.fit_transform(DF_AAPL[["Open", "Close"]], 1)
         print(transformed.tail().columns)
         print(legacy(DF_AAPL).tail().columns)
         np.testing.assert_array_almost_equal(
@@ -86,5 +86,5 @@ class TestDataTransformerUseCase(TestCase):
         res = []
         pipeline.transform(DF_AAPL, res)
         print(len(res))
-
+        print(transformed.max().max())
 
