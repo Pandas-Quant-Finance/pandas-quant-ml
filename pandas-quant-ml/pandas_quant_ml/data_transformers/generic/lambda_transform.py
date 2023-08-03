@@ -22,7 +22,7 @@ class Lambda(DataTransformer):
         self.args = args
         self.kwargs = kwargs
         self.inv_func = inv_func
-        self.names = [names] if not isinstance(names, (Iterable, Callable)) else names
+        self.names = [names] if names is not None and not isinstance(names, (Iterable, Callable)) else names
 
         self._original_names = None
 
@@ -34,7 +34,7 @@ class Lambda(DataTransformer):
         if isinstance(df, pd.Series): df = df.to_frame()
         
         if self.names is not None:
-            df = df.rename(columns=dict(zip(df.columns, self.names)))
+            df = df.rename(columns=dict(zip(df.columns, self.names)), level=-1)
 
         return df.dropna()
 

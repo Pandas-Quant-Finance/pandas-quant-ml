@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from pandas_df_commons.indexing import get_columns
+from pandas_df_commons.indexing.decorators import foreach_top_level_column
 from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 
@@ -20,32 +22,35 @@ class GapBodyUpperLower(DataTransformer):
 
     def _fit(self, df: pd.DataFrame):
         # FIXME use correct values for inverse functions
-        self.basis["volume"] = df[self.volume].iloc[0]
-        self.basis["open"] = df[self.open].iloc[0]
+        self.basis["volume"] = get_columns(df, self.volume).iloc[0]
+        self.basis["open"] = get_columns(df, self.open).iloc[0]
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        o = df[self.open]
-        c = df[self.close]
-        h = df[self.high]
-        l = df[self.low]
-        oc = pd.concat([o, c], axis=1)
-        c_1 = c.shift(1)
-        gap = (o / c_1 - 1).fillna(0)
+        @foreach_top_level_column
+        def trans(df):
+            o = df[self.open]
+            c = df[self.close]
+            h = df[self.high]
+            l = df[self.low]
+            oc = pd.concat([o, c], axis=1)
+            c_1 = c.shift(1)
+            gap = (o / c_1 - 1).fillna(0)
 
-        # calculate close, upper_shadow, lower_shadow, body
-        res = pd.DataFrame({
-            "gap": gap,
-            "body": (c / o - 1),
-            "upper": (h / oc.max(axis=1) - 1),
-            "lower": (oc.min(axis=1) / l - 1),
-        }, index=df.index)
+            # calculate close, upper_shadow, lower_shadow, body
+            res = pd.DataFrame({
+                "gap": gap,
+                "body": (c / o - 1),
+                "upper": (h / oc.max(axis=1) - 1),
+                "lower": (oc.min(axis=1) / l - 1),
+            }, index=df.index)
 
-        if self.volume is not None and self.volume in df.columns:
-            rel_vol = df[self.volume].pct_change().fillna(0)
-            if not self.drop_nan_volume or not rel_vol.isnull().all():
-                res[self.volume] = rel_vol
+            if self.volume is not None and self.volume in df.columns:
+                rel_vol = df[self.volume].pct_change().fillna(0)
+                if not self.drop_nan_volume or not rel_vol.isnull().all():
+                    res[self.volume] = rel_vol
 
-        return res
+            return res
+        return trans(df)
 
     def _inverse(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         inv = pd.DataFrame(index=df.index)

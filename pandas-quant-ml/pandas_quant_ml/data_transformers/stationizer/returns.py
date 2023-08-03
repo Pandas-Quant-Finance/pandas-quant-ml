@@ -22,11 +22,11 @@ class Returns(DataTransformer):
 
     def _fit(self, df: pd.DataFrame):
         self._min_period_columns = \
-            [df.rename(columns=partial(self.names, i=i, p=p)) for i, p in enumerate(self.periods)][0].columns
+            [df.rename(columns=partial(self.names, i=i, p=p), level=-1) for i, p in enumerate(self.periods)][0].columns
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         return pd.concat(
-            [df.pct_change(periods=p).rename(columns=partial(self.names, i=i, p=p)) for i, p in enumerate(self.periods)],
+            [df.pct_change(periods=p).rename(columns=partial(self.names, i=i, p=p), level=-1) for i, p in enumerate(self.periods)],
             axis=1
         ).sort_index().dropna()
 

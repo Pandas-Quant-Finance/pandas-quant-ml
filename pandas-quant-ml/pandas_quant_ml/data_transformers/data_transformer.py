@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, List, Tuple
+from abc import ABC, abstractmethod
+from typing import List, Tuple
 
 import pandas as pd
-from abc import ABC, abstractmethod
 
 
 class DataTransformer(ABC):

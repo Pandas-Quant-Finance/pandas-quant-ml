@@ -113,12 +113,12 @@ class TrainTestLoop(object):
 
                     features_in_shape = self.get_features_in_shape(b[0])
                     labels_in_shape = self.get_labels_in_shape(b[1])
-                    index_in_shape = b[0].index.values.reshape(labels_in_shape[0].shape[:-1])
+                    index_in_shape = b[0].index.values.reshape(features_in_shape[0].shape[:-1])
                     cache.add_batch(
                         index_in_shape,
                         *features_in_shape, # TODO Later we want to allow tuple numpy arrays for different fetatures/labels like int, float
                         *labels_in_shape,
-                        b[2].values.reshape(index_in_shape.shape),
+                        b[2].values.reshape(labels_in_shape[0].shape[:-1]),
                     )
 
         self._meta_data = MetaData(
@@ -161,7 +161,7 @@ class TrainTestLoop(object):
             feature_df = self._add_frame_name_category(name, feature_df)
 
             # fix leaking test data into training data by fixing the test data length
-            level = 0 if feature_df.index.nlevels != label_df.index.nlevels else None
+            level = 0  #if feature_df.index.nlevels != label_df.index.nlevels else None
             predicted_periods = len(pd.unique(loc_at_level(feature_df, slice(last_index_value(label_df, 0), None, None), level).index.get_level_values(0))) - 1
             test_length -= predicted_periods
 

@@ -4,6 +4,7 @@ from typing import Callable, Iterable, List
 
 import pandas as pd
 
+from pandas_df_commons.indexing import get_columns
 from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 
 
@@ -20,15 +21,17 @@ class Select(DataTransformer):
         self._original_names = self.columns
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        df = df[self.columns]
+        df = get_columns(df, self.columns)
+        if df.ndim == 1: df = df.to_frame()
+
         if self.names is not None:
             df = df.rename(
-                columns=self.names if callable(self.names) else dict(zip(df.columns, self.names))
+                columns=self.names if callable(self.names) else dict(zip(df.columns, self.names)), level=-1
             )
         return df
 
     def _inverse(self, df: pd.DataFrame, prev_df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(columns=dict(zip(df.columns, self._original_names)))
+        return df.rename(columns=dict(zip(df.columns, self._original_names)), level=-1)
 
 
 class SelectJoin(DataTransformer):
@@ -64,5 +67,3 @@ class SelectJoin(DataTransformer):
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
         # should never get here
         pass
-
-
