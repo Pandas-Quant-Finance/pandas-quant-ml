@@ -4,5 +4,9 @@ jupyter
 jupyter-client
 tabulate
 pathos
+pytest
 matplotlib
 tensorflow
+tensorflow-probability
+torch
+deepdow
