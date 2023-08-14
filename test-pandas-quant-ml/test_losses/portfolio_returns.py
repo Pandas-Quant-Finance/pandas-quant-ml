@@ -7,8 +7,8 @@ import pytest
 os.environ["CUDA_VISIBLE_DEVICES"] = ""  # disable GPU
 
 import tensorflow as tf
+
 import torch
-from unittest import TestCase
 
 from pandas_quant_ml.losses.keras.deepdow import portfolio_returns as k_portfolio_returns
 from pandas_quant_ml.losses.pytorch.deepdow import portfolio_returns as t_portfolio_returns
@@ -68,4 +68,21 @@ def test_portfolio_cumreturns_torch_keras(input_type, output_type, rebalance):
         k_portfolio_cumulative_returns(tf.convert_to_tensor(y, dtype=tf.float32), model(tf.convert_to_tensor(x, dtype=tf.float32)), input_type, output_type, rebalance),
         t_portfolio_cumulative_returns(torch.from_numpy(model.predict(tf.convert_to_tensor(x, dtype=tf.float32))), torch.from_numpy(y.astype('float32')), input_type, output_type, rebalance),
         decimal=4
+    )
+
+
+def test_SharpeRatioLoss():
+
+    from pandas_quant_ml.losses.keras.deepdow import SharpeRatio as kSharpeRatio
+    from pandas_quant_ml.losses.pytorch.deepdow import SharpeRatio as tSharpeRatio
+    w = np.random.normal(0, 0.2, (1, 11))
+    y = np.random.normal(0, 0.5, (1, 1, 10, 11))
+
+    #print(tSharpeRatio()(torch.from_numpy(w.astype('float32')), torch.from_numpy(y.astype('float32'))))
+    #print(kSharpeRatio()(tf.convert_to_tensor(y, dtype=tf.float32), tf.convert_to_tensor(w, dtype=tf.float32)))
+
+    numpy.testing.assert_array_almost_equal(
+        (kSharpeRatio()*2.1)(tf.convert_to_tensor(y, dtype=tf.float32), tf.convert_to_tensor(w, dtype=tf.float32)),
+        (tSharpeRatio()*2.1)(torch.from_numpy(w.astype('float32')), torch.from_numpy(y.astype('float32'))),
+        decimal=6
     )
