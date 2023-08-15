@@ -4,3 +4,4 @@ sklearn
 scipy
 pandas
 numpy
+dill
