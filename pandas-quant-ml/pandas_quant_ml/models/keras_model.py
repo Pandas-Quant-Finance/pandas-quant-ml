@@ -26,7 +26,7 @@ class KerasModel(object):
     ):
         super().__init__()
         self.looper = looper
-        self.keras_model_provider = lambda md: model if isinstance(model, tf.keras.Model) else model
+        self.keras_model_provider = lambda md, *args, **kwargs: model if isinstance(model, tf.keras.Model) else model
         self.keras_model_compile_args = kwargs
 
         self.keras_model: tf.keras.Model = None
@@ -48,9 +48,11 @@ class KerasModel(object):
         train, test = self.looper.train_test_iterator(frames, **kwargs)
 
         # Only now we know the meta-data and can create the model
-        self.keras_model = self.keras_model_provider(self.looper.meta_data)
-        if len(self.keras_model_compile_args) > 0:
-            self.keras_model.compile(**self.keras_model_compile_args)
+        # NOTE if keras_model is not none we continue training on an already trained model
+        if self.keras_model is None:
+            self.keras_model = self.keras_model_provider(self.looper.meta_data)
+            if len(self.keras_model_compile_args) > 0:
+                self.keras_model.compile(**self.keras_model_compile_args)
 
         train_it = KerasDataGenerator(train, **(data_generator_kwargs or {}))
         test_it = KerasDataGenerator(test, **(data_generator_kwargs or {}))
@@ -64,6 +66,9 @@ class KerasModel(object):
             use_multiprocessing=use_multiprocessing,
             **(keras_fit_kwargs or {}),
         ).history)
+
+        if "val_acc" in self.history:
+            self.history["val_accuracy"] = self.history.pop("val_acc")
 
         def y_true_y_hat():
             for prediction in self.predict(frames, include_labels=True):
