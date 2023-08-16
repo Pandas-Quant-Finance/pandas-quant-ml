@@ -32,7 +32,7 @@ class TestOptunaModel(TestCase):
             )
 
         model = OptunaModel(
-            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=0.5, batch_size=6), # FIXME use train, val test split
+            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=(0.6, 0.6), batch_size=6),
             optuna.create_study(
                 direction="minimize", pruner=optuna.pruners.MedianPruner(n_startup_trials=2)
             ),
@@ -50,6 +50,7 @@ class TestOptunaModel(TestCase):
 
         _, pdf = next(model.predict(df, include_labels=True))
         print(pdf)
-        self.assertEquals((pdf[pdf.columns[-1]] == 'TRAIN').sum(), 25)
-        self.assertEquals((pdf[pdf.columns[-1]] == 'TEST').sum(), 25)
-        # FIXME self.assertEquals((pdf[pdf.columns[-1]] == 'VAL').sum(), ??)
+        self.assertEquals((pdf[pdf.columns[-1]] == 'TRAIN').sum(), 30)
+        self.assertEquals((pdf[pdf.columns[-1]] == 'VAL').sum(), 12)
+        self.assertEquals((pdf[pdf.columns[-1]] == 'TEST').sum(), 8)
+
