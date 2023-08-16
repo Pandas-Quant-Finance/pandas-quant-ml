@@ -187,7 +187,7 @@ class TrainTestLoop(object):
             if self.train_test_split_ratio[1] > 0:
                 data_length = len(unique_level_values(label_test_df))
                 test_length = int(data_length - data_length * self.train_test_split_ratio[1])
-                self._split_indices[name][1] = (label_test_df.index[-test_length],)
+                self._split_indices[name] = (self._split_indices[name][0], label_test_df.index[-test_length])
                 (feature_val_df, label_val_df, weight_val_df), (feature_test_df, label_test_df, weight_test_df) =\
                     split_frames(feature_test_df, label_test_df, weight_test_df, test_length=test_length)
             else:

@@ -10,9 +10,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from tensorflow import keras
 from unittest import TestCase
 
-from test_data_generators.data import get_x_or
+from testing_data.data import get_x_or
 from pandas_quant_ml.data_generators.keras_generator import KerasDataGenerator
-from pandas_quant_ml.model_scoring.model_scorer import ModelScorer
 
 
 class TestKerasGenerator(TestCase):

@@ -5,7 +5,7 @@ import pandas as pd
 from pandas_quant_ml.data_transformers.generic.selection import Select
 from pandas_quant_ml.data_transformers.generic.shift import PredictDateTimePeriods
 from pandas_quant_ml.data_transformers.stationizer.returns import Returns
-from tesing_data import DF_AAPL
+from testing_data import DF_AAPL
 
 
 class TestStationizerTransformer(TestCase):

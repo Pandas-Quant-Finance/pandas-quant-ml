@@ -1,21 +1,18 @@
 import os
-import tempfile
 
 import optuna
-import pandas as pd
 
 from pandas_quant_ml.data_generators.train_loop_data_generator import TrainTestLoop
 from pandas_quant_ml.data_transformers.generic.selection import Select
 from pandas_quant_ml.models.hyper_parameter_model import OptunaModel
 from pandas_quant_ml.models.keras_model import KerasModel
-from pandas_quant_ml.utils.serialize import serialize, deserialize
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from tensorflow import keras
 from unittest import TestCase
 
-from test_data_generators.data import get_x_or
+from testing_data.data import get_x_or
 
 
 class TestOptunaModel(TestCase):

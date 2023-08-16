@@ -13,7 +13,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 from tensorflow import keras
 from unittest import TestCase
 
-from test_data_generators.data import get_x_or
+from testing_data.data import get_x_or
 
 
 class TestKerasModel(TestCase):
