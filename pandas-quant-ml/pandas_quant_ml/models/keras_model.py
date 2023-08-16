@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import array
 import os.path
 import shutil
 import tempfile
@@ -14,9 +13,11 @@ import tensorflow as tf
 
 from pandas_quant_ml.data_generators.keras_generator import KerasDataGenerator
 from pandas_quant_ml.data_generators.train_loop_data_generator import TrainTestLoop
+from pandas_quant_ml.models.model import Model
+from pandas_quant_ml.utils.batch_cache import BatchCache
 
 
-class KerasModel(object):
+class KerasModel(Model):
 
     def __init__(
             self,
@@ -24,65 +25,56 @@ class KerasModel(object):
             model: tf.keras.Model | Callable[['MetaData'], tf.keras.Model],
             **kwargs
     ):
-        super().__init__()
-        self.looper = looper
+        super().__init__(looper)
+
         self.keras_model_provider = lambda md, *args, **kwargs: model if isinstance(model, tf.keras.Model) else model
         self.keras_model_compile_args = kwargs
 
         self.keras_model: tf.keras.Model = None
-        self.history: Dict[str, np.ndarray] = None
 
         if len(kwargs) > 0 and isinstance(model, tf.keras.Model):
             model.compile(**kwargs)
 
-    def fit(
+    def _fit(
             self,
-            frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
+            train_test_val: Tuple[BatchCache, ...],
             epochs: int = 10,
             workers: int = 1,
             use_multiprocessing: bool = False,
-            keras_fit_kwargs: Dict = None,
             data_generator_kwargs: Dict = None,
             **kwargs,
-    ) -> Callable[[], Generator[Tuple[Any, pd.DataFrame], None, None]]:
-        train, test = self.looper.train_test_iterator(frames, **kwargs)
+    ) -> Dict[str, np.ndarray]:
+        train, test = train_test_val[:2]
+        train_it = KerasDataGenerator(train, **(data_generator_kwargs or {}))
+        test_it = KerasDataGenerator(test, **(data_generator_kwargs or {}))
 
         # Only now we know the meta-data and can create the model
         # NOTE if keras_model is not none we continue training on an already trained model
         if self.keras_model is None:
+            # Clear clutter from previous TensorFlow graphs.
+            tf.keras.backend.clear_session()
             self.keras_model = self.keras_model_provider(self.looper.meta_data)
+
             if len(self.keras_model_compile_args) > 0:
                 self.keras_model.compile(**self.keras_model_compile_args)
 
-        train_it = KerasDataGenerator(train, **(data_generator_kwargs or {}))
-        test_it = KerasDataGenerator(test, **(data_generator_kwargs or {}))
-
-        self.history = deepcopy(self.keras_model.fit(
+        history = deepcopy(self.keras_model.fit(
             train_it,
             validation_data=test_it,
             workers=workers,
             epochs=epochs,
             shuffle=False,
             use_multiprocessing=use_multiprocessing,
-            **(keras_fit_kwargs or {}),
+            **kwargs,
         ).history)
 
-        if "val_acc" in self.history:
-            self.history["val_accuracy"] = self.history.pop("val_acc")
+        if "val_acc" in history:
+            history["val_accuracy"] = history.pop("val_acc")
 
-        def y_true_y_hat():
-            for prediction in self.predict(frames, include_labels=True):
-                yield prediction
+        return history
 
-        return y_true_y_hat
-
-    def predict(
-            self,
-            frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
-            include_labels: bool = False,
-    ) -> Generator[Tuple[Any, pd.DataFrame], None, None]:
-        for prediction in self.looper.inference_generator(frames, self.keras_model.predict, include_labels):
-            yield prediction
+    def get_model_predictor_from_numpy(self) -> Callable[[np.ndarray], np.ndarray]:
+        return self.keras_model.predict
 
     def __getstate__(self):
         # don't pickle self.keras_model but save weights into a bin array

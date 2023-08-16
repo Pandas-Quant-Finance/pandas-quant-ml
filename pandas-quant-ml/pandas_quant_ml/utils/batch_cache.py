@@ -33,8 +33,9 @@ class BatchCache(object):
     def to_repeating_iterator(self, max_epochs: int = None, on_epoch_end: Callable[[int], None] = None):
         i = 0
         while i < max_epochs or max_epochs is None:
-            for x in self:
-                yield x
+            # for x in self: yield x
+            for j in range(len(self)):
+                yield self[j]
 
             if on_epoch_end is not None:
                 on_epoch_end(i)

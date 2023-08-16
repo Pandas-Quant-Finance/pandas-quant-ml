@@ -32,9 +32,11 @@ class TestKerasModel(TestCase):
 
         model.fit(df, epochs=3)
         print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+        self.assertEquals(len(model.history['loss']), 3)
 
-        pdf = next(model.predict(df, include_labels=True))
+        _, pdf = next(model.predict(df, include_labels=True))
         print(pdf)
+        self.assertGreater(len(pdf), 10)
 
     def test_train_test_simple(self):
         df = get_x_or()
@@ -50,12 +52,14 @@ class TestKerasModel(TestCase):
 
         model.fit(df, epochs=3)
         print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+        self.assertEquals(len(model.history['loss']), 3)
 
         _, pdf = next(model.predict(df, include_labels=True))
         self.assertEquals((pdf[pdf.columns[-1]] == 'TRAIN').sum(), 38)
         self.assertEquals((pdf[pdf.columns[-1]] == 'TEST').sum(), 12)
 
         print(pdf)
+        self.assertGreater(len(pdf), 10)
 
     def test_save_load(self):
         df = get_x_or()
@@ -78,3 +82,4 @@ class TestKerasModel(TestCase):
             _, pdf_restored = next(model2.predict(df))
 
         pd.testing.assert_frame_equal(pdf_orig, pdf_restored)
+        self.assertEquals(len(model2.history['loss']), 3)
