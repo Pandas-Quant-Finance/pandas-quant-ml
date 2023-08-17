@@ -62,8 +62,6 @@ class TrainTestLoop(object):
             feature_pipeline: DataTransformer,
             label_pipeline: DataTransformer,
             sample_weights: DataTransformer = None,
-            train_test_split_ratio: float | Tuple[float, float] = 0.75,
-            batch_size: int = None,
             include_frame_name_category: bool | int = False,
             feature_shape: Tuple[int, ...] = None,
             label_shape: Tuple[int, ...] = None,
@@ -72,8 +70,6 @@ class TrainTestLoop(object):
         self.feature_pipeline = feature_pipeline
         self.label_pipeline = label_pipeline
         self.sample_weights = sample_weights
-        self.train_test_split_ratio = (train_test_split_ratio, 0) if isinstance(train_test_split_ratio, float) else train_test_split_ratio
-        self.batch_size = batch_size
         self.include_frame_name_category = include_frame_name_category
         self.feature_shape = feature_shape
         self.label_shape = label_shape
@@ -84,6 +80,8 @@ class TrainTestLoop(object):
         self._sample_weights_pipelines = defaultdict(lambda: deepcopy(self.sample_weights) if self.sample_weights is not None else None)
         self._split_indices = {}
         self._meta_data: MetaData = None
+        self._train_test_split_ratio = None
+        self._batch_size = None
 
     @property
     def meta_data(self):
@@ -93,16 +91,21 @@ class TrainTestLoop(object):
     def train_test_iterator(
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
+            train_test_split_ratio: float | Tuple[float, float] = 0.75,
+            batch_size: int = None,
             nth_row_only: int = None,
     ) -> Tuple[BatchCache, BatchCache] | Tuple[BatchCache, BatchCache, BatchCache]:
+        self._train_test_split_ratio = (train_test_split_ratio, 0) if isinstance(train_test_split_ratio, float) else train_test_split_ratio
+        self._batch_size = batch_size
+
         train_cache, val_cache, test_cache = self.batch_cache(), self.batch_cache(), self.batch_cache()
         categorical, real = None, None
         categories = defaultdict(set)
         target = -1
 
         for train_val_test in self._train_test_batches(frames, nth_row_only):
-            train_val_test = train_val_test if self.train_test_split_ratio[1] > 0 else train_val_test[:-1]
-            caches = [train_cache, val_cache, test_cache] if self.train_test_split_ratio[1] > 0 else [train_cache, test_cache]
+            train_val_test = train_val_test if self._train_test_split_ratio[1] > 0 else train_val_test[:-1]
+            caches = [train_cache, val_cache, test_cache] if self._train_test_split_ratio[1] > 0 else [train_cache, test_cache]
             for cache, (features, labels, weights) in zip(caches, train_val_test):
                 for b in zip(features, labels, weights):
                     # collect some meta data
@@ -130,7 +133,7 @@ class TrainTestLoop(object):
         )
 
         # return iterable AND sub_scriptable object batch_cache[123]
-        return (train_cache, val_cache, test_cache) if self.train_test_split_ratio[1] > 0 else (train_cache, test_cache)
+        return (train_cache, val_cache, test_cache) if self._train_test_split_ratio[1] > 0 else (train_cache, test_cache)
 
     def get_features_in_shape(self, features: pd.DataFrame) -> Tuple[np.ndarray, ...]:
         shape = (index_shape(features) + index_shape(features, axis=1)) if self.feature_shape is None else self.feature_shape
@@ -149,7 +152,8 @@ class TrainTestLoop(object):
     ) -> Generator[Tuple[Tuple[Batch, Batch, Batch], ...], None, None]:
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
             data_length = len(unique_level_values(df))
-            test_length = int(data_length - data_length * self.train_test_split_ratio[0])
+            test_length = int(data_length - data_length * self._train_test_split_ratio[0])
+
             feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length)
             label_df, _ = self._label_pipelines[name].fit_transform(df, test_length)
             if self._sample_weights_pipelines[name] is not None:
@@ -184,9 +188,9 @@ class TrainTestLoop(object):
                 split_frames(feature_df, label_df, weight_df, split_index=split_idx)
             _LOG.info(f"Train test split for {name}: {len(feature_train_df)} / {len(feature_test_df)}")
 
-            if self.train_test_split_ratio[1] > 0:
+            if self._train_test_split_ratio[1] > 0:
                 data_length = len(unique_level_values(label_test_df))
-                test_length = int(data_length - data_length * self.train_test_split_ratio[1])
+                test_length = int(data_length - data_length * self._train_test_split_ratio[1])
                 self._split_indices[name] = (self._split_indices[name][0], label_test_df.index[-test_length])
                 (feature_val_df, label_val_df, weight_val_df), (feature_test_df, label_test_df, weight_test_df) =\
                     split_frames(feature_test_df, label_test_df, weight_test_df, test_length=test_length)
@@ -195,9 +199,9 @@ class TrainTestLoop(object):
 
             # make batch generators and yield them
             yield (
-                tuple(Batch(f, self.batch_size) for f in [feature_train_df, label_train_df, weight_train_df]),
-                tuple(Batch(f, self.batch_size) for f in[feature_val_df, label_val_df, weight_val_df]),
-                tuple(Batch(f, self.batch_size) for f in[feature_test_df, label_test_df, weight_test_df]),
+                tuple(Batch(f, self._batch_size) for f in [feature_train_df, label_train_df, weight_train_df]),
+                tuple(Batch(f, self._batch_size) for f in[feature_val_df, label_val_df, weight_val_df]),
+                tuple(Batch(f, self._batch_size) for f in[feature_test_df, label_test_df, weight_test_df]),
             )
 
     def inference_generator(
@@ -231,7 +235,7 @@ class TrainTestLoop(object):
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
 
-            batcher = Batch(feature_df, self.batch_size or len(feature_df))
+            batcher = Batch(feature_df, self._batch_size or len(feature_df))
             predicted_df = predictor(batcher)
 
             # fix prediction column names. Note that it can be that the coulmn count is different

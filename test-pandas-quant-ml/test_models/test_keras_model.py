@@ -22,7 +22,7 @@ class TestKerasModel(TestCase):
         df = get_x_or()
 
         model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=1.0, batch_size=6),
+            TrainTestLoop(Select(0, 1), Select("label")),
             keras.Sequential([
                 keras.Input(shape=(2,)),
                 keras.layers.Dense(1, 'sigmoid'),
@@ -30,7 +30,7 @@ class TestKerasModel(TestCase):
             loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
         )
 
-        model.fit(df, epochs=3)
+        model.fit(df, train_test_split_ratio=1.0, batch_size=6, epochs=3)
         print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
         self.assertEquals(len(model.history['loss']), 3)
 
@@ -42,7 +42,7 @@ class TestKerasModel(TestCase):
         df = get_x_or()
 
         model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=0.75, batch_size=6),
+            TrainTestLoop(Select(0, 1), Select("label")),
             keras.Sequential([
                 keras.Input(shape=(2,)),
                 keras.layers.Dense(1, 'sigmoid'),
@@ -50,7 +50,7 @@ class TestKerasModel(TestCase):
             loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
         )
 
-        model.fit(df, epochs=3)
+        model.fit(df, train_test_split_ratio=0.75, batch_size=6, epochs=3)
         print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
         self.assertEquals(len(model.history['loss']), 3)
 
@@ -65,7 +65,7 @@ class TestKerasModel(TestCase):
         df = get_x_or()
 
         model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=1.0, batch_size=6),
+            TrainTestLoop(Select(0, 1), Select("label")),
             keras.Sequential([
                 keras.Input(shape=(2,)),
                 keras.layers.Dense(1, 'sigmoid'),
@@ -73,7 +73,7 @@ class TestKerasModel(TestCase):
             loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
         )
 
-        model.fit(df, epochs=3)
+        model.fit(df, train_test_split_ratio=1.0, batch_size=6, epochs=3)
         _, pdf_orig = next(model.predict(df))
 
         with tempfile.TemporaryDirectory() as td:

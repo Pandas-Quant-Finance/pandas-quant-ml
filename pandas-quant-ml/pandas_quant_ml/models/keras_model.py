@@ -37,14 +37,14 @@ class KerasModel(Model):
 
     def _fit(
             self,
-            train_test_val: Tuple[BatchCache, ...],
+            batch_gen: Callable[[], Tuple[BatchCache, ...]],
             epochs: int = 10,
             workers: int = 1,
             use_multiprocessing: bool = False,
             data_generator_kwargs: Dict = None,
             **kwargs,
     ) -> Dict[str, np.ndarray]:
-        train, test = train_test_val[:2]
+        train, test = batch_gen()[:2]
         train_it = KerasDataGenerator(train, **(data_generator_kwargs or {}))
         test_it = KerasDataGenerator(test, **(data_generator_kwargs or {}))
 

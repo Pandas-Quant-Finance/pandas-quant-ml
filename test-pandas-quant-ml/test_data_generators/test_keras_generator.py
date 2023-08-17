@@ -18,8 +18,8 @@ class TestKerasGenerator(TestCase):
 
     def test_concept(self):
         df = get_x_or()
-        looper = TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=1.0, batch_size=5)
-        train, test = looper.train_test_iterator(df)
+        looper = TrainTestLoop(Select(0, 1), Select("label"))
+        train, test = looper.train_test_iterator(df, train_test_split_ratio=1.0, batch_size=5)
         it = KerasDataGenerator(train)
 
         samples = 0
@@ -35,8 +35,8 @@ class TestKerasGenerator(TestCase):
         epochs = 10
         samples = []
 
-        looper = TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=1.0, batch_size=6)
-        train, test = looper.train_test_iterator(df)
+        looper = TrainTestLoop(Select(0, 1), Select("label"))
+        train, test = looper.train_test_iterator(df, train_test_split_ratio=1.0, batch_size=6)
         it = KerasDataGenerator(train, on_batch_end=lambda _, i, x, y, w: samples.append(x.shape[0]), on_epoch_end=print)
 
         model = keras.Sequential([

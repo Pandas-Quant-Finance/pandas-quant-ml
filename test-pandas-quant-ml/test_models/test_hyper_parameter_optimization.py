@@ -32,19 +32,20 @@ class TestOptunaModel(TestCase):
             )
 
         model = OptunaModel(
-            TrainTestLoop(Select(0, 1), Select("label"), train_test_split_ratio=(0.6, 0.6), batch_size=6),
+            TrainTestLoop(Select(0, 1), Select("label")),
             optuna.create_study(
                 direction="minimize", pruner=optuna.pruners.MedianPruner(n_startup_trials=2)
             ),
             'val_loss',
             {
+                "batch_size": lambda trial: trial.suggest_categorical("batch_size", [3, 6, 12]),
                 "learning_rate": lambda trial: trial.suggest_float("learning_rate", 1e-4, 1e-1, log=True),
                 "nodes": lambda trial: trial.suggest_categorical("nodes", [2, 5, 10]),
             },
             model_factory
         )
 
-        model.fit(df, n_trials=5, timeout=600)
+        model.fit(df, train_test_split_ratio=(0.6, 0.6), n_trials=5, timeout=600)
         print(model.history)
         self.assertEquals(len(model.history['metric']), 5)
 

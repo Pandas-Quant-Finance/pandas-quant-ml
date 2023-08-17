@@ -12,10 +12,9 @@ class TestTrainTestLoopGenerator(TestCase):
         ttl = TrainTestLoop(
             Select("Close") >> Winsorize(252, 5),
             Select("Close") >> Winsorize(252, 5),
-            batch_size=100
         )
 
-        train, test = ttl.train_test_iterator(DF_AAPL)
+        train, test = ttl.train_test_iterator(DF_AAPL, batch_size=100)
 
         self.assertListEqual([t[0].shape[0] for t in train], [100, 100, 100, 100, 100, 13])
         self.assertListEqual([t[0].shape[0] for t in train.to_repeating_iterator(2)], [100, 100, 100, 100, 100, 13] * 2)
@@ -25,11 +24,9 @@ class TestTrainTestLoopGenerator(TestCase):
         ttl = TrainTestLoop(
             Select("Close") >> Winsorize(252, 5),
             Select("Close") >> Winsorize(252, 5),
-            train_test_split_ratio=(0.7, 0.7),
-            batch_size=100
         )
 
-        train, val, test = ttl.train_test_iterator(DF_AAPL)
+        train, val, test = ttl.train_test_iterator(DF_AAPL, train_test_split_ratio=(0.7, 0.7), batch_size=100)
 
         self.assertListEqual([t[0].shape[0] for t in train], [100, 100, 100, 100, 79])
         self.assertListEqual([t[0].shape[0] for t in val], [100, 44])

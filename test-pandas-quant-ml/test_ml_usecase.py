@@ -37,14 +37,11 @@ class TestFullMLUseCse(TestCase):
             >> CalcNormalisedReturns(1, 60, 0.15, names="target_return") \
             >> PredictDateTimePeriods(1) \
             >> MovingWindow(252),
-            # train test split
-            train_test_split_ratio=0.9,
-            batch_size=100,
             include_frame_name_category=True,
             # feature_shape=(252, 9)
         )
 
-        train, test = looper.train_test_iterator([("AAPL", DF_AAPL)]) #, nth_row_only=252)
+        train, test = looper.train_test_iterator([("AAPL", DF_AAPL)], train_test_split_ratio=0.9, batch_size=100,) #, nth_row_only=252)
         for t in train:
             print(t[1].shape)
         for t in test:

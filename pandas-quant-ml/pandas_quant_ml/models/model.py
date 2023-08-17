@@ -18,10 +18,15 @@ class Model(object):
     def fit(
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
+            train_test_split_ratio: float | Tuple[float, float] = 0.75,
+            batch_size: int = None,
             nth_row_only: int = None,
             **kwargs,
     ) -> Callable[[], Generator[Tuple[Any, pd.DataFrame], None, None]]:
-        self.history = self._fit(self.looper.train_test_iterator(frames, nth_row_only), **kwargs)
+        def get_train_test_batches(batch_size=batch_size, nth_row_only=nth_row_only):
+            return self.looper.train_test_iterator(frames, train_test_split_ratio, batch_size, nth_row_only)
+
+        self.history = self._fit(get_train_test_batches, **kwargs)
 
         def y_true_y_hat():
             for prediction in self.predict(frames, include_labels=True):
@@ -29,7 +34,7 @@ class Model(object):
 
         return y_true_y_hat
 
-    def _fit(self, train_test_val: Tuple[BatchCache, ...], **kwargs) -> Dict[str, np.ndarray]:
+    def _fit(self, batch_gen: Callable[[], Tuple[BatchCache, ...]], **kwargs) -> Dict[str, np.ndarray]:
         pass
 
     def predict(
