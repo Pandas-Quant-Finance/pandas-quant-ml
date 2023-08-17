@@ -103,7 +103,7 @@ class TestKerasModel(TestCase):
             loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
         )
 
-        model.fit(df, train_test_split_ratio=1.0, batch_size=6, epochs=3)
+        model.fit(df, train_test_split_ratio=0.8, batch_size=6, epochs=3)
         _, pdf_orig = next(model.predict(df))
 
         with tempfile.TemporaryDirectory() as td:
@@ -113,3 +113,8 @@ class TestKerasModel(TestCase):
 
         pd.testing.assert_frame_equal(pdf_orig, pdf_restored)
         self.assertEquals(len(model2.history['loss']), 3)
+
+        with self.assertLogs() as captured:
+            model2.fit(df, train_test_split_ratio=1.0, batch_size=6, epochs=3)
+
+        self.assertIn("reset_pipeline=True", ";".join(captured.output))
