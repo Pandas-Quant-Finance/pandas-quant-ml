@@ -15,16 +15,19 @@ class CleanNaN(DataTransformer):
             nan: Literal['None'] | float = 'drop',
             pinf: float = np.nan,
             ninf: float = np.nan,
+            ffill: bool = False,
     ):
         super().__init__()
         self.nan = nan
         self.pinf = pinf
         self.ninf = ninf
+        self.ffill = ffill
 
     def _fit(self, df: pd.DataFrame):
         pass
 
     def _transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        if self.ffill: df = df.ffill()
         df = df.replace(np.inf, self.pinf).replace(-np.inf, self.ninf)
         return df.replace(np.nan, self.nan) if isinstance(self.nan, (float, int)) else df.dropna()
 

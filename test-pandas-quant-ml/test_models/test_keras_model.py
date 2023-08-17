@@ -61,6 +61,36 @@ class TestKerasModel(TestCase):
         print(pdf)
         self.assertGreater(len(pdf), 10)
 
+    def test_re_train_test_simple(self):
+        df = get_x_or()
+
+        model = KerasModel(
+            TrainTestLoop(Select(0, 1), Select("label")),
+            keras.Sequential([
+                keras.Input(shape=(2,)),
+                keras.layers.Dense(1, 'sigmoid'),
+            ]),
+            loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
+        )
+
+        model.fit(df, train_test_split_ratio=0.75, batch_size=6, epochs=3)
+        print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+        self.assertEquals(len(model.history['loss']), 3)
+
+        with self.assertLogs() as captured:
+            model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3)
+
+        print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+        self.assertEquals(len(model.history['loss']), 3)
+        self.assertIn("reset_pipeline=True", ";".join(captured.output))
+
+        with self.assertLogs() as captured:
+            model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3, reset_pipeline=True)
+
+        print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
+        self.assertEquals(len(model.history['loss']), 3)
+        self.assertNotIn("reset_pipeline=True", ";".join(captured.output))
+
     def test_save_load(self):
         df = get_x_or()
 

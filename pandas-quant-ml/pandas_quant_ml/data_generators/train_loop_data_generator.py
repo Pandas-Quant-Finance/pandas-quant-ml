@@ -94,6 +94,7 @@ class TrainTestLoop(object):
             train_test_split_ratio: float | Tuple[float, float] = 0.75,
             batch_size: int = None,
             nth_row_only: int = None,
+            reset_pipeline: bool = False,
     ) -> Tuple[BatchCache, BatchCache] | Tuple[BatchCache, BatchCache, BatchCache]:
         self._train_test_split_ratio = (train_test_split_ratio, 0) if isinstance(train_test_split_ratio, float) else train_test_split_ratio
         self._batch_size = batch_size
@@ -103,7 +104,7 @@ class TrainTestLoop(object):
         categories = defaultdict(set)
         target = -1
 
-        for train_val_test in self._train_test_batches(frames, nth_row_only):
+        for train_val_test in self._train_test_batches(frames, nth_row_only, reset_pipeline):
             train_val_test = train_val_test if self._train_test_split_ratio[1] > 0 else train_val_test[:-1]
             caches = [train_cache, val_cache, test_cache] if self._train_test_split_ratio[1] > 0 else [train_cache, test_cache]
             for cache, (features, labels, weights) in zip(caches, train_val_test):
@@ -149,15 +150,16 @@ class TrainTestLoop(object):
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
             nth_row_only: int = None,
+            reset_pipeline: bool = False,
     ) -> Generator[Tuple[Tuple[Batch, Batch, Batch], ...], None, None]:
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
             data_length = len(unique_level_values(df))
             test_length = int(data_length - data_length * self._train_test_split_ratio[0])
 
-            feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length)
-            label_df, _ = self._label_pipelines[name].fit_transform(df, test_length)
+            feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
+            label_df, _ = self._label_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
             if self._sample_weights_pipelines[name] is not None:
-                weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0)
+                weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0, reset=reset_pipeline)
             else:
                 weight_df = label_df[[]].assign(w=1.0)
 

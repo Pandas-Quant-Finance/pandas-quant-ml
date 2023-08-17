@@ -18,8 +18,9 @@ class DataTransformer(ABC):
         other._previous = self
         return other
 
-    def fit_transform(self, df: pd.DataFrame, reserved_data_length: int, queue: bool = False) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
+    def fit_transform(self, df: pd.DataFrame, reserved_data_length: int, queue: bool = False, reset: bool = False) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
         assert len(df) - reserved_data_length > 0, f"need data for training len={len(df)} reserved for test={reserved_data_length}"
+        if reset: self.reset()
         self.fit(df.iloc[:max(len(df) - reserved_data_length, -1)], skip_if_already_fitted=True)
         return self.transform(df, queue)
 
