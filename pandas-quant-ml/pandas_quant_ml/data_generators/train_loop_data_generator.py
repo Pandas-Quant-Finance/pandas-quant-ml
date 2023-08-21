@@ -117,12 +117,12 @@ class TrainTestLoop(object):
 
                     features_in_shape = self.get_features_in_shape(b[0])
                     labels_in_shape = self.get_labels_in_shape(b[1])
-                    index_in_shape = b[0].index.values.reshape(features_in_shape[0].shape[:-1])
+                    index_in_shape = b[0].index.values.reshape(index_shape(b[0]))# b[0].index.values.reshape(features_in_shape[0].shape[:2])
                     cache.add_batch(
                         index_in_shape,
                         *features_in_shape, # TODO Later we want to allow tuple numpy arrays for different fetatures/labels like int, float
                         *labels_in_shape,
-                        b[2].values.reshape(labels_in_shape[0].shape[:-1]),
+                        b[2].values.reshape(labels_in_shape[0].shape[:2]),
                     )
 
         self._meta_data = MetaData(
