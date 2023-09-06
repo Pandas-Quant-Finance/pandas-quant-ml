@@ -55,81 +55,17 @@ class TestLightningModel(TestCase):
             LNet()
         )
 
-        model.fit(df, train_test_split_ratio=1.0, batch_size=6, max_epochs=3)
+        model.fit(df, train_test_split_ratio=1.0, batch_size=6, max_epochs=30)
         print(model.history)
-        self.assertEquals(len(model.history['loss']), 3)
+        self.assertEquals(len(model.history['loss']), 30)
+        self.assertLess(model.history['loss'][-1], model.history['loss'][0])
 
         _, pdf = next(model.predict(df, include_labels=True))
-        print(pdf)
         self.assertGreater(len(pdf), 10)
 
-    def test_train_test_simple(self):
-        df = get_x_or()
-
-        model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label")),
-            keras.Sequential([
-                keras.Input(shape=(2,)),
-                keras.layers.Dense(1, 'sigmoid'),
-            ]),
-            loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
-        )
-
-        model.fit(df, train_test_split_ratio=0.75, batch_size=6, epochs=3)
-        print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
-
-        _, pdf = next(model.predict(df, include_labels=True))
-        self.assertEquals((pdf[pdf.columns[-1]] == 'TRAIN').sum(), 38)
-        self.assertEquals((pdf[pdf.columns[-1]] == 'TEST').sum(), 12)
-
-        print(pdf)
-        self.assertGreater(len(pdf), 10)
-
-    def test_re_train_test_simple(self):
-        df = get_x_or()
-
-        model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label")),
-            keras.Sequential([
-                keras.Input(shape=(2,)),
-                keras.layers.Dense(1, 'sigmoid'),
-            ]),
-            loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
-        )
-
-        model.fit(df, train_test_split_ratio=0.75, batch_size=6, epochs=3)
-        print(model.history)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
-
-        with self.assertLogs() as captured:
-            model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3)
-
-        print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
-        self.assertIn("reset_pipeline=True", ";".join(captured.output))
-
-        with self.assertLogs() as captured:
-            model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3, reset_pipeline=True)
-
-        print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
-        self.assertNotIn("reset_pipeline=True", ";".join(captured.output))
-
-    def test_save_load(self):
-        df = get_x_or()
-
-        model = KerasModel(
-            TrainTestLoop(Select(0, 1), Select("label")),
-            keras.Sequential([
-                keras.Input(shape=(2,)),
-                keras.layers.Dense(1, 'sigmoid'),
-            ]),
-            loss='binary_crossentropy', optimizer=keras.optimizers.Adam()
-        )
-
-        model.fit(df, train_test_split_ratio=0.8, batch_size=6, epochs=3)
+        # Test save and load model
         _, pdf_orig = next(model.predict(df))
+        print(pdf)
 
         with tempfile.TemporaryDirectory() as td:
             serialize(model, os.path.join(td, "lala"))
@@ -137,9 +73,10 @@ class TestLightningModel(TestCase):
             _, pdf_restored = next(model2.predict(df))
 
         pd.testing.assert_frame_equal(pdf_orig, pdf_restored)
-        self.assertEquals(len(model2.history['loss']), 3)
+        self.assertEquals(len(model.history['loss']), len(model2.history['loss']))
 
         with self.assertLogs() as captured:
-            model2.fit(df, train_test_split_ratio=1.0, batch_size=6, epochs=3)
+            model2.fit(df, train_test_split_ratio=1.0, batch_size=6, max_epochs=3)
 
         self.assertIn("reset_pipeline=True", ";".join(captured.output))
+        self.assertEquals(len(model2.history['loss']), 33)

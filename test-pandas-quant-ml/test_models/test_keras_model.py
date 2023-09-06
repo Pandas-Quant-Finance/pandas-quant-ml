@@ -81,15 +81,18 @@ class TestKerasModel(TestCase):
             model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3)
 
         print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
+        self.assertEquals(len(model.history['loss']), 6)
         self.assertIn("reset_pipeline=True", ";".join(captured.output))
 
         with self.assertLogs() as captured:
             model.fit(df, train_test_split_ratio=0.9, batch_size=6, epochs=3, reset_pipeline=True)
 
         print(model.history, captured)  # {'loss': [0.7795496582984924, 0.7781541347503662, 0.776929497718811]}
-        self.assertEquals(len(model.history['loss']), 3)
+        self.assertEquals(len(model.history['loss']), 9)
         self.assertNotIn("reset_pipeline=True", ";".join(captured.output))
+
+        print(model.history_retrained_indexes)
+        self.assertListEqual(model.history_retrained_indexes['loss'], [3, 6])
 
     def test_save_load(self):
         df = get_x_or()

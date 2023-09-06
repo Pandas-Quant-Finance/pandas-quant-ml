@@ -73,14 +73,6 @@ class LightningModel(Model):
 
         return predictor
 
-    def __getstate__(self):
-        # FIMXE implement me
-        pass
-
-    def __setstate__(self, state):
-        # FIMXE implement me
-        pass
-
 
 class _MetricTracker(pl.Callback):
 

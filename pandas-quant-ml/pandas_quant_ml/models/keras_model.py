@@ -84,11 +84,11 @@ class KerasModel(Model):
             shutil.make_archive(file, 'zip', temp_dir)
             weights = np.fromfile(open(f"{file}.zip", "rb"), dtype=np.dtype('B'))
 
-        return self.looper, self.keras_model_provider, self.keras_model_compile_args, self.history, weights
+        return self.looper, self.keras_model_provider, self.keras_model_compile_args, self.history, self.history_retrained_indexes, weights
 
     def __setstate__(self, state):
         # restore model by using the provider and loading weights
-        self.looper, self.keras_model_provider, self.keras_model_compile_args, self.history, weights = state
+        self.looper, self.keras_model_provider, self.keras_model_compile_args, self.history, self.history_retrained_indexes, weights = state
         self.keras_model = self.keras_model_provider(self.looper.meta_data)
 
         with tempfile.TemporaryDirectory() as temp_dir:

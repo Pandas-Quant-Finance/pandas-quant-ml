@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from typing import Any, Dict, Tuple, Iterable, Generator, Callable
 
 import numpy as np
@@ -11,11 +12,13 @@ from pandas_quant_ml.utils.batch_cache import BatchCache
 
 LOG = logging.getLogger(__name__)
 
+
 class Model(object):
 
     def __init__(self, looper: TrainTestLoop, **kwargs):
         self.looper = looper
-        self.history: Dict[str, np.ndarray] | None = None
+        self.history: Dict[str, np.ndarray] = {}
+        self.history_retrained_indexes = defaultdict(list)
 
     def fit(
             self,
@@ -36,7 +39,15 @@ class Model(object):
                 "If you want to also refit the data pipeline you have to pass `reset_pipeline=True`!"
             )
 
-        self.history = self._fit(get_train_test_batches, **kwargs)
+        hist = self._fit(get_train_test_batches, **kwargs)
+        hist = {k: v if isinstance(v, np.ndarray) else np.array(v) for k, v in hist.items()}
+
+        if len(self.history) <= 0:
+            self.history = hist
+        else:
+            for k, v in hist.items():
+                self.history_retrained_indexes[k].append(len(self.history.get(k, [])))
+                self.history[k] = np.concatenate([self.history[k], v]) if k in self.history else v
 
         def y_true_y_hat():
             for prediction in self.predict(frames, include_labels=True):
