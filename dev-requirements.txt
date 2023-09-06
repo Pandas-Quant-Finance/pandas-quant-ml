@@ -10,3 +10,4 @@ tensorflow
 tensorflow-probability
 torch
 deepdow
+lightning

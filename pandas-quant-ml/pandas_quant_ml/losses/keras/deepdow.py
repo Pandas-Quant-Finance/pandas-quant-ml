@@ -166,6 +166,7 @@ class Loss:
     Additionally it implement +, -, * and / operation between losses.
     """
 
+    @tf.autograph.experimental.do_not_convert  # allow debugging
     def _call(self, weights, y):
         raise NotImplementedError()
 
@@ -479,7 +480,7 @@ class SharpeRatio(Loss):
         self.output_type = output_type
         self.eps = eps
 
-    def __call__(self, y, weights):
+    def _call(self, y, weights):
         """Compute negative sharpe ratio.
 
         Parameters
@@ -497,8 +498,9 @@ class SharpeRatio(Loss):
             Tensor of shape `(n_samples,)` representing the per sample negative sharpe ratio.
 
         """
+        returns = y[:, self.returns_channel, ...]
         prets = portfolio_returns(
-            y[:, self.returns_channel, ...],
+            returns,
             weights,
             input_type=self.input_type,
             output_type=self.output_type,
@@ -509,7 +511,7 @@ class SharpeRatio(Loss):
         std = tf.math.sqrt(tf.experimental.numpy.var(prets, dtype=mean.dtype, axis=1, ddof=1)) + self.eps
         return -mean / std
 
-    def __repr__(self):
+    def _repr(self):
         """Generate representation string."""
         return "{}(rf={}, returns_channel={}, input_type='{}', output_type='{}', eps={})".format(
             self.__class__.__name__,

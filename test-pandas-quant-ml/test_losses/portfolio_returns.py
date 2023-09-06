@@ -71,6 +71,34 @@ def test_portfolio_cumreturns_torch_keras(input_type, output_type, rebalance):
     )
 
 
+def test_Loss():
+    from pandas_quant_ml.losses.keras.deepdow import SharpeRatio
+    model = tf.keras.Sequential([
+        tf.keras.layers.InputLayer((20, 2, 1)),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(2, activation='sigmoid'),
+        tf.keras.layers.Softmax(),
+    ])
+
+    print(model.predict(np.random.normal(0, 0.7, (100, 20, 2, 1))))
+
+    model.compile('Adam', 'mse') #SharpeRatio())
+    model.fit(
+        np.random.normal(0, 0.7, (100, 20, 2, 1)),
+        #np.random.normal(0, 0.7, (100, 5, 2, 1)),
+        np.random.uniform(0, 0.5, (100, 2)),
+        batch_size=128
+    )
+
+    model.compile('Adam', SharpeRatio())
+    model.fit(
+        np.random.normal(0, 0.7, (100, 20, 2, 1)),
+        np.random.normal(0, 0.7, (100, 5, 2, 1)),
+        # np.random.uniform(0, 0.5, (100, 2)),
+        batch_size=128
+    )
+
+
 def test_SharpeRatioLoss():
 
     from pandas_quant_ml.losses.keras.deepdow import SharpeRatio as kSharpeRatio
@@ -86,3 +114,4 @@ def test_SharpeRatioLoss():
         (tSharpeRatio()*2.1)(torch.from_numpy(w.astype('float32')), torch.from_numpy(y.astype('float32'))),
         decimal=6
     )
+
