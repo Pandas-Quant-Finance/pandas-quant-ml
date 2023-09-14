@@ -122,7 +122,7 @@ class TrainTestLoop(object):
                         index_in_shape,
                         *features_in_shape, # TODO Later we want to allow tuple numpy arrays for different fetatures/labels like int, float
                         *labels_in_shape,
-                        b[2].values.reshape(labels_in_shape[0].shape[:2]),
+                        b[2].values.reshape(labels_in_shape[0].shape[:2]) if len(b[2]) != len(labels_in_shape[0]) else b[2].values,
                     )
 
         self._meta_data = MetaData(
@@ -217,7 +217,22 @@ class TrainTestLoop(object):
             for b in batches:
                 values = self.get_features_in_shape(b)
                 predicted = predictor(*values)
-                predicted_dfs.append(pd.DataFrame(predicted.reshape(len(b.index), -1), index=b.index))
+                idx = b.index
+
+                # try to fix multi timestep predictions
+                while len(idx) > len(predicted) and idx.nlevels > 1:
+                    idx = idx.droplevel(-1).unique()
+
+                if len(predicted) % len(idx) != 0:
+                    raise ValueError(f"Unmatchable sizes {predicted.shape} vs {len(idx)}")
+
+                while len(predicted) > len(idx):
+                    new_level_size = int(len(predicted) / len(idx))
+                    new_level = list(range(new_level_size)) * len(idx)
+                    df_idx = pd.concat([idx.to_frame() for _ in range(len(idx))], axis=0).assign(ext=new_level)
+                    idx = pd.MultiIndex.from_frame(df_idx)
+
+                predicted_dfs.append(pd.DataFrame(predicted.reshape(len(idx), -1), index=idx))
 
             return pd.concat(predicted_dfs, axis=0)
 

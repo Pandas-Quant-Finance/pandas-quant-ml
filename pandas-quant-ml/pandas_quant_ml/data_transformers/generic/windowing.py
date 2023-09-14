@@ -33,12 +33,6 @@ class MovingWindow(DataTransformer):
 
             return res
         else:
-            columns = pd.MultiIndex.from_product([range(self.period), df.columns])
-            return pd.concat(
-                [pd.DataFrame(
-                    w.values.reshape(1, -1),
-                    index=[w.index[-1]],
-                    columns=columns if self.multi_index else [f"{c[1]}_{c[0]}" for c in columns],
-                ) for w in all_windows],
-                axis=0
+            return pd.DataFrame(
+                [w.reset_index(drop=True).unstack() for w in all_windows]
             )
