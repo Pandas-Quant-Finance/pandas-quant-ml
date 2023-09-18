@@ -4,11 +4,10 @@ import os.path
 import shutil
 import tempfile
 from copy import deepcopy
-from typing import Any, Dict, Tuple, Iterable, Generator, Callable
+from typing import Dict, Tuple, Callable
 from zipfile import ZipFile
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 from pandas_quant_ml.data_generators.keras_generator import KerasDataGenerator

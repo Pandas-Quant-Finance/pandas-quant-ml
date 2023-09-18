@@ -223,7 +223,7 @@ class TrainTestLoop(object):
                 hash_func=lambda key: hash_df(df) * 31 + hash(key)
             )[name]
 
-        return tuple(transform(pl) for pl in pipelines if pl is not None)
+        return tuple(transform(pl)[0] for pl in pipelines if pl is not None)
 
     def inference_generator(
             self,

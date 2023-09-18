@@ -29,7 +29,7 @@ class ObjectFileCache(object):
         return self.get_item(item)[0]
 
     def get_item(self, arg, ) -> Tuple[Any, bool]:
-        if self.cache_size == 0: return self.provider()
+        if self.cache_size == 0: return self.provider(), False
 
         obj_hash = str(self.hash_func(arg))
         if self.cache_size > 0: self._evict_old_but(obj_hash)
