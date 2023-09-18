@@ -3,6 +3,7 @@ from unittest import TestCase
 from pandas_quant_ml.data_generators.train_loop_data_generator import TrainTestLoop
 from pandas_quant_ml.data_transformers.filter.outlier import Winsorize
 from pandas_quant_ml.data_transformers.generic.selection import Select
+from pandas_quant_ml.utils.serialize import serialize, deserialize
 from testing_data import DF_AAPL
 
 
@@ -28,6 +29,20 @@ class TestTrainTestLoopGenerator(TestCase):
 
         train, val, test = ttl.train_test_iterator(DF_AAPL, train_test_split_ratio=(0.7, 0.7), batch_size=100)
 
+        self.assertListEqual([t[0].shape[0] for t in train], [100, 100, 100, 100, 79])
+        self.assertListEqual([t[0].shape[0] for t in val], [100, 44])
+        self.assertListEqual([t[0].shape[0] for t in test], [61])
+
+    def test_caching_loop_to_disk(self):
+        ttl = TrainTestLoop(
+            Select("Close") >> Winsorize(252, 5),
+            Select("Close") >> Winsorize(252, 5),
+        )
+
+        cached = ttl.train_test_iterator(DF_AAPL, train_test_split_ratio=(0.7, 0.7), batch_size=100)
+        serialize(cached, '/tmp/foo')
+
+        train, val, test = deserialize('/tmp/foo')
         self.assertListEqual([t[0].shape[0] for t in train], [100, 100, 100, 100, 79])
         self.assertListEqual([t[0].shape[0] for t in val], [100, 44])
         self.assertListEqual([t[0].shape[0] for t in test], [61])

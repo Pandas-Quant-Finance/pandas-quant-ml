@@ -8,6 +8,7 @@ from typing import Iterable, Type, Any, Tuple, Dict, List, Generator, Callable
 
 import numpy as np
 import pandas as pd
+import pandas.core.util.hashing
 
 from pandas_df_commons._utils.streaming import frames_at_common_index
 from pandas_df_commons.indexing._utils import get_top_level_rows
@@ -105,6 +106,7 @@ class TrainTestLoop(object):
         target = -1
 
         for train_val_test in self._train_test_batches(frames, nth_row_only, reset_pipeline):
+            train_val_test = tuple(tuple(bc.with_batch_size(batch_size) for bc in f_l_w) for f_l_w in train_val_test)
             train_val_test = train_val_test if self._train_test_split_ratio[1] > 0 else train_val_test[:-1]
             caches = [train_cache, val_cache, test_cache] if self._train_test_split_ratio[1] > 0 else [train_cache, test_cache]
             for cache, (features, labels, weights) in zip(caches, train_val_test):
@@ -151,11 +153,13 @@ class TrainTestLoop(object):
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
             nth_row_only: int = None,
             reset_pipeline: bool = False,
-    ) -> Generator[Tuple[Tuple[Batch, Batch, Batch], ...], None, None]:
+    ) -> Generator[Tuple[Tuple[BatchingContainer, BatchingContainer, BatchingContainer], ...], None, None]:
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
             data_length = len(unique_level_values(df))
             test_length = int(data_length - data_length * self._train_test_split_ratio[0])
 
+            # FIXME if should be enough to just cache the fit_transform
+            #  if hash is equal and hashkey provided and name in *_pipeline, then return cached result
             feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
             label_df, _ = self._label_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
             if self._sample_weights_pipelines[name] is not None:
@@ -201,10 +205,17 @@ class TrainTestLoop(object):
 
             # make batch generators and yield them
             yield (
-                tuple(Batch(f, self._batch_size) for f in [feature_train_df, label_train_df, weight_train_df]),
-                tuple(Batch(f, self._batch_size) for f in[feature_val_df, label_val_df, weight_val_df]),
-                tuple(Batch(f, self._batch_size) for f in[feature_test_df, label_test_df, weight_test_df]),
+                tuple(BatchingContainer(f, self._batch_size) for f in [feature_train_df, label_train_df, weight_train_df]),
+                tuple(BatchingContainer(f, self._batch_size) for f in [feature_val_df, label_val_df, weight_val_df]),
+                tuple(BatchingContainer(f, self._batch_size) for f in [feature_test_df, label_test_df, weight_test_df]),
             )
+
+    def _frame_hashes(self, frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],):
+        h = 0
+        for name, df in make_top_level_row_iterator(make_iterable(frames)):
+            h += 31 * (31 * h + hash(name)) + pandas.core.util.hashing.hash_pandas_object(df)
+
+        return h
 
     def inference_generator(
             self,
@@ -242,7 +253,7 @@ class TrainTestLoop(object):
     def _inference_generator(
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
-            predictor: Callable[[Batch], pd.DataFrame],
+            predictor: Callable[[BatchingContainer], pd.DataFrame],
             include_labels: bool = False,
     ):
         for name, df in make_top_level_row_iterator(make_iterable(frames)):
@@ -252,7 +263,7 @@ class TrainTestLoop(object):
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
 
-            batcher = Batch(feature_df, self._batch_size or len(feature_df))
+            batcher = BatchingContainer(feature_df, self._batch_size or len(feature_df))
             predicted_df = predictor(batcher)
 
             # fix prediction column names. Note that it can be that the coulmn count is different
@@ -292,14 +303,17 @@ class MetaData(object):
     category_counts: List[int]  # list of counts of categories of each categorical variable
 
 
-class Batch(object):
+class BatchingContainer(object):
 
-    def __init__(self, df: pd.DataFrame, batch_size: int):
+    def __init__(self, df: pd.DataFrame, batch_size: int = None):
         self.df = df
         self.batch_size = len(df) if batch_size is None else batch_size
 
         self._current_index = -1
         self._index = get_top_level_rows(df) if isinstance(df.index, pd.MultiIndex) else df.index
+
+    def with_batch_size(self, batch_size: int = None):
+        return BatchingContainer(self.df, batch_size)
 
     def __iter__(self):
         self._current_index = 0
