@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import partial
 from typing import Iterable, Type, Any, Tuple, Dict, List, Generator, Callable
 
 import numpy as np
@@ -11,6 +12,7 @@ import pandas as pd
 import pandas.core.util.hashing
 
 from pandas_df_commons._utils.streaming import frames_at_common_index
+from pandas_df_commons.hashing import hash_df
 from pandas_df_commons.indexing._utils import get_top_level_rows
 from pandas_df_commons.indexing.multiindex_utils import make_top_level_row_iterator, loc_at_level, last_index_value, \
     nth, unique_level_values, index_shape
@@ -18,6 +20,7 @@ from pandas_quant_ml.data_transformers.data_transformer import DataTransformer
 from pandas_quant_ml.data_transformers.generic.constant import DataConstant
 from pandas_quant_ml.utils.batch_cache import BatchCache, MemCache
 from pandas_quant_ml.utils.iter_utils import make_iterable
+from pandas_quant_ml.utils.obj_file_cache import ObjectFileCache
 from pandas_quant_ml.utils.split_frame import split_frames, get_split_index
 
 
@@ -96,16 +99,19 @@ class TrainTestLoop(object):
             batch_size: int = None,
             nth_row_only: int = None,
             reset_pipeline: bool = False,
+            cache_key: str = None,
+            cache_size: int = 1,
     ) -> Tuple[BatchCache, BatchCache] | Tuple[BatchCache, BatchCache, BatchCache]:
         self._train_test_split_ratio = (train_test_split_ratio, 0) if isinstance(train_test_split_ratio, float) else train_test_split_ratio
         self._batch_size = batch_size
 
+        source_frame_cache_factory = partial(ObjectFileCache, cache_key=cache_key, cache_size=cache_size if cache_key is not None else 0)
         train_cache, val_cache, test_cache = self.batch_cache(), self.batch_cache(), self.batch_cache()
         categorical, real = None, None
         categories = defaultdict(set)
         target = -1
 
-        for train_val_test in self._train_test_batches(frames, nth_row_only, reset_pipeline):
+        for train_val_test in self._train_test_batches(frames, source_frame_cache_factory, nth_row_only, reset_pipeline):
             train_val_test = tuple(tuple(bc.with_batch_size(batch_size) for bc in f_l_w) for f_l_w in train_val_test)
             train_val_test = train_val_test if self._train_test_split_ratio[1] > 0 else train_val_test[:-1]
             caches = [train_cache, val_cache, test_cache] if self._train_test_split_ratio[1] > 0 else [train_cache, test_cache]
@@ -151,6 +157,7 @@ class TrainTestLoop(object):
     def _train_test_batches(
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
+            cache_factory: Callable[[Callable[[], Any], str, Callable[[Any], int]], ObjectFileCache],
             nth_row_only: int = None,
             reset_pipeline: bool = False,
     ) -> Generator[Tuple[Tuple[BatchingContainer, BatchingContainer, BatchingContainer], ...], None, None]:
@@ -158,14 +165,10 @@ class TrainTestLoop(object):
             data_length = len(unique_level_values(df))
             test_length = int(data_length - data_length * self._train_test_split_ratio[0])
 
-            # FIXME if should be enough to just cache the fit_transform
-            #  if hash is equal and hashkey provided and name in *_pipeline, then return cached result
-            feature_df, _ = self._feature_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
-            label_df, _ = self._label_pipelines[name].fit_transform(df, test_length, reset=reset_pipeline)
-            if self._sample_weights_pipelines[name] is not None:
-                weight_df, _ = self._sample_weights_pipelines[name].fit_transform(df, 0, reset=reset_pipeline)
-            else:
-                weight_df = label_df[[]].assign(w=1.0)
+            # it should be enough to just cache the fit_transform
+            transformend_dfs = self._transform_source_frame(name, df, test_length, reset_pipeline, cache_factory)
+            if len(transformend_dfs) < 3: transformend_dfs += (transformend_dfs[-1][[]].assign(w=1.0),)
+            feature_df, label_df, weight_df = transformend_dfs
 
             # add categorical variable for frame name if requested
             feature_df = self._add_frame_name_category(name, feature_df)
@@ -210,12 +213,17 @@ class TrainTestLoop(object):
                 tuple(BatchingContainer(f, self._batch_size) for f in [feature_test_df, label_test_df, weight_test_df]),
             )
 
-    def _frame_hashes(self, frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],):
-        h = 0
-        for name, df in make_top_level_row_iterator(make_iterable(frames)):
-            h += 31 * (31 * h + hash(name)) + pandas.core.util.hashing.hash_pandas_object(df)
+    def _transform_source_frame(self, name, df, test_length, reset_pipeline, cache_factory):
+        pipelines = [self._feature_pipelines[name], self._label_pipelines[name], self._sample_weights_pipelines[name]]
 
-        return h
+        def transform(pl):
+            return cache_factory(
+                partial(pl.fit_transform, df, test_length, reset=reset_pipeline),
+                name,
+                hash_func=lambda key: hash_df(df) * 31 + hash(key)
+            )[name]
+
+        return tuple(transform(pl) for pl in pipelines if pl is not None)
 
     def inference_generator(
             self,

@@ -14,7 +14,8 @@ class TestObjCache(TestCase):
 
         cache = ObjectFileCache(
             lambda: df,
-            "a_cache_key", "df",
+            "df",
+            cache_key="a_cache_key",
             hash_func=lambda key: hash_df(df) * 31 + hash(key)
         )
 
@@ -29,3 +30,4 @@ class TestObjCache(TestCase):
         b, was_cached = cache.get_item("lala")
         self.assertTrue(was_cached)
         pd.testing.assert_frame_equal(b, df)
+        pd.testing.assert_frame_equal(b, cache["lala"])

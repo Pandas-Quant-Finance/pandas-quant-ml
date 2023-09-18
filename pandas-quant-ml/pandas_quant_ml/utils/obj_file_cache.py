@@ -11,10 +11,17 @@ CACHE_ROOT_DIR = Path(os.environ.get('PQML_CACHE_ROOT_DIR', tempfile.gettempdir(
 class ObjectFileCache(object):
 
     # partial(self._feature_pipelines[name].fit_transform, reserved_data_length=test_length, reset=reset_pipeline)
-    def __init__(self, data_provider: Callable[[], Any], *path, cache_size: int = 1, hash_func: Callable[[Any], int] = hash):
+    def __init__(
+            self,
+            data_provider: Callable[[], Any],
+            *path: str,
+            cache_key: str = None,
+            cache_size: int = 1,
+            hash_func: Callable[[Any], int] = hash
+    ):
         super().__init__()
         self.provider = data_provider
-        self.path = CACHE_ROOT_DIR.joinpath(*path)
+        self.path = CACHE_ROOT_DIR.joinpath(*([cache_key] if cache_key is not None else []), *[str(p) for p in path])
         self.cache_size = cache_size
         self.hash_func = hash_func
 
