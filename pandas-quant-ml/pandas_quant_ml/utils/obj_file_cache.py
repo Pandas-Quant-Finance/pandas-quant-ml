@@ -1,3 +1,4 @@
+import logging
 import tempfile
 from pathlib import Path
 from typing import Callable, Any, Tuple
@@ -6,7 +7,7 @@ from pandas_quant_ml.utils.serialize import serialize, deserialize
 import os
 
 CACHE_ROOT_DIR = Path(os.environ.get('PQML_CACHE_ROOT_DIR', tempfile.gettempdir()))
-
+LOG = logging.getLogger(__name__)
 
 class ObjectFileCache(object):
 
@@ -39,6 +40,7 @@ class ObjectFileCache(object):
 
         if cache_file.exists():
             cache_file.touch(exist_ok=True)
+            LOG.info(f"fetch cached {cache_file}")
             return deserialize(cache_file), True
 
         res = self.provider()

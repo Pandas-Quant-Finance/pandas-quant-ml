@@ -214,23 +214,30 @@ class TrainTestLoop(object):
             )
 
     def _transform_source_frame(self, name, df, test_length, reset_pipeline, cache_factory):
-        pipelines = [self._feature_pipelines[name], self._label_pipelines[name], self._sample_weights_pipelines[name]]
+        pipelines = [self._feature_pipelines, self._label_pipelines, self._sample_weights_pipelines]
 
-        def transform(pl):
+        def lala(pl):
+            frame, _ = pl.fit_transform(df, test_length, reset=reset_pipeline) if pl is not None else (None, None)
+            return frame, pl
+
+        def transform(pl, index):
             return cache_factory(
-                partial(pl.fit_transform, df, test_length, reset=reset_pipeline),
-                name,
-                hash_func=lambda key: hash_df(df) * 31 + hash(key)
+                partial(lala, pl), #partial(pl.fit_transform, df, test_length, reset=reset_pipeline),
+                name, index,
+                hash_func=lambda key: hash_df(df) * 31 + hash(key) * 31 + index
             )[name]
 
-        return tuple(transform(pl)[0] for pl in pipelines if pl is not None)
+        cached = tuple(transform(pl[name], i) for i, pl in enumerate(pipelines))
+        for (_, t), pl in zip(cached, pipelines): pl[name] = t
+
+        return tuple(c for c, _ in cached if c is not None)
 
     def inference_generator(
             self,
             frames: pd.DataFrame | Iterable[Tuple[Any, pd.DataFrame]] | Dict[Any, pd.DataFrame],
             predictor: Callable[[np.ndarray], np.ndarray],
             include_labels: bool = False,
-    ):
+    ) -> Generator[Tuple[str, pd.DataFrame], None, None]:
         def wrapped_predictor(batches) -> pd.DataFrame:
             predicted_dfs = []
             for b in batches:
